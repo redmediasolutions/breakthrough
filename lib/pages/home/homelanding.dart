@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:musiclearner/components/coursecards.dart';
 import 'package:musiclearner/components/learning_prog.dart';
 import 'package:musiclearner/components/smallcoursecards.dart';
+import 'package:musiclearner/model/coursesmodel.dart';
+import 'package:musiclearner/services/firestore.dart';
 
 class Homelanding extends StatelessWidget {
   const Homelanding({super.key});
@@ -214,61 +216,49 @@ class Homelanding extends StatelessWidget {
 ),
 const SizedBox(height: 18),
 
-// HORIZONTAL 
-SingleChildScrollView(
-  scrollDirection: Axis.horizontal,
-  physics: const BouncingScrollPhysics(),
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: Row(
-    children: const [
-      Coursecards(
-        img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-        lessons: "12 Lessons",
-        title: "Pro Mixing Secrets",
-        instructor: "David Miller",
-        price: "₹499",
-        oldPrice: "₹1,899",
-        rating: 4.9,
-      ),
+// Courses List
+SizedBox(
+  height: 240,
+  child: StreamBuilder<List<Coursesmodel>>(
+    stream: FirestoreService().listofCourses,
+    builder: (context, snapshot) {
 
-      SizedBox(width: 15),
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
 
-      Coursecards(
-        img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-        lessons: "9 Lessons",
-        title: "Guitar Masterclass",
-        instructor: "Arjun Rao",
-        price: "₹699",
-        oldPrice: "₹2,499",
-        rating: 4.7,
-      ),
+      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+        return const Center(child: Text("No courses available"));
+      }
 
-      SizedBox(width: 15),
+      final courses = snapshot.data!;
 
-      Coursecards(
-        img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-        lessons: "15 Lessons",
-        title: "Piano Mastery",
-        instructor: "Sarah Jenkins",
-        price: "₹899",
-        oldPrice: "₹2,999",
-        rating: 4.8,
-      ),
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: courses.length,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemBuilder: (context, index) {
 
-      SizedBox(width: 15),
+          final course = courses[index];
 
-      Coursecards(
-        img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-        lessons: "8 Lessons",
-        title: "Drumming Basics",
-        instructor: "Mike Portnoy",
-        price: "₹550",
-        oldPrice: "₹1,500",
-        rating: 4.6,
-      ),
-    ],
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Coursecards(
+              img: course.courseimage ?? "",
+              lessons: "${course.userssignedup ?? 0} Lessons",
+              title: course.coursename ?? "Untitled",
+              instructor: course.coursedescription ?? "",
+              price: "₹${course.courseprice ?? 0}",
+              oldPrice: "₹${course.courseprice ?? 0}",
+              rating: (course.userssignedup ?? 0).toDouble(),
+            ),
+          );
+        },
+      );
+    },
   ),
 ),
+
 
 const SizedBox(height: 30),
 
