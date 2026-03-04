@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import 'package:provider/provider.dart';
+import 'package:breakthrough/services/auth_provider.dart';
 
 
 class Profile extends StatelessWidget {
@@ -207,7 +208,7 @@ Column(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       child: GestureDetector(
         onTap: () {
-            context.goNamed('loginpage');
+            context.read<AuthProvider>().logout();
         },
         child: Container(
           padding: const EdgeInsets.all(16),

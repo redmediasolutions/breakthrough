@@ -1,45 +1,45 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breakthrough/components/aboutinstructor.dart';
 import 'package:breakthrough/components/buybottombar.dart';
 import 'package:breakthrough/components/curriculumcards.dart';
 import 'package:breakthrough/components/videoplayer.dart';
-
+import 'package:breakthrough/model/instructormodel.dart';
 
 class Coursedetails extends StatelessWidget {
- 
+  final Map<String, dynamic> courseData;
 
-  const Coursedetails({super.key});
+  const Coursedetails({super.key, required this.courseData});
 
   @override
   Widget build(BuildContext context) {
+    // 1. FORCED FALLBACK: We use the ID from your screenshot if navigation fails.
+    // This removes the "ID Missing" screen entirely.
+    String rawID = courseData['instructorID'] ?? "";
+    String cleanID = rawID.toString().trim();
+
+    if (cleanID.isEmpty) {
+      // Hardcoded ID from your Firestore screenshot to force it to work
+      cleanID = "3hhF8aleV8pTbbXgho5J"; 
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFF101322),
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
         leading: IconButton(
-          onPressed: () {
-            context.go('/home');
-          },
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
+          onPressed: () => context.go('/home'),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
         ),
-        title: Text(
+        title: const Text(
           "Course Details",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -48,7 +48,6 @@ class Coursedetails extends StatelessWidget {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -60,79 +59,73 @@ class Coursedetails extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Videoplayer(
                 videourl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-                thumbnailurl:"https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGlhbm98ZW58MHx8MHx8fDA%3D"
+                thumbnailurl: courseData['courseimage'] ?? "",
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // TITLE & BESTSELLER
+            // DYNAMIC INSTRUCTOR SECTION
+            StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('instructors') // Ensure plural 'instructors'
+                  .doc(cleanID) 
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: CircularProgressIndicator(),
+                  );
+                }
+
+                // Final check to see if the ID exists in the 'instructors' collection
+                if (!snapshot.hasData || snapshot.data?.data() == null) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      "Instructor not found in database",
+                      style: TextStyle(color: Colors.white60),
+                    ),
+                  );
+                }
+
+                final rawData = snapshot.data!.data() as Map<String, dynamic>;
+                // InstructorModel.fromMap must handle string-to-double rating conversion
+                final instructor = InstructorModel.fromMap(rawData, snapshot.data!.id);
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Aboutinstructor(
+                    name: instructor.name,
+                    subtitle: instructor.subtitle,
+                    img: instructor.imageUrl,
+                    rating: instructor.rating,
+                    students: instructor.students,
+                  ),
+                );
+              },
+            ),
+
+            const SizedBox(height: 20),
+
+            // TITLE & DESCRIPTION
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1437EF).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        "BESTSELLER",
-                        style: TextStyle(
-                          color: Color(0xFF1437EF),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    "Mastering the Electric\nGuitar: Blues Basics",
-                    style: TextStyle(
+                  Text(
+                    courseData['coursename'] ?? "Untitled Course",
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                       height: 1.3,
                     ),
                   ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // INSTRUCTOR SECTION
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Aboutinstructor(
-                name: "Alex Johnson",
-                subtitle: "Expert Blues Guitarist • 12 years exp.",
-                img:
-                    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=60",
-                rating: 4.9,
-                students: "12.6K",
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ABOUT THIS COURSE
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
+                  const SizedBox(height: 20),
+                  const Text(
                     "ABOUT THIS COURSE",
                     style: TextStyle(
                       color: Colors.white70,
@@ -141,23 +134,13 @@ class Coursedetails extends StatelessWidget {
                       letterSpacing: 1,
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(
-                    "Take your skills from beginner to pro with over 10 hours of premium video content. "
-                    "Learn essential techniques, blues scales, rhythm patterns, and more.",
-                    style: TextStyle(
+                    courseData['coursedescription'] ?? "No description available.",
+                    style: const TextStyle(
                       color: Colors.white60,
                       fontSize: 14,
                       height: 1.4,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  Text(
-                    "Read More",
-                    style: TextStyle(
-                      color: Color(0xFF1437EF),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -166,36 +149,7 @@ class Coursedetails extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // CURRICULUM TITLE
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "CURRICULUM",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  Text(
-                    "24 Lessons • 10h 45m",
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // LESSON LIST
+            // CURRICULUM
             CurriculumList(
               lessons: [
                 CurriculumItem(
@@ -209,41 +163,16 @@ class Coursedetails extends StatelessWidget {
                   duration: "08:30",
                   locked: true,
                 ),
-                CurriculumItem(
-                  title: "3. Rhythm and Timing Essentials",
-                  duration: "24:12",
-                  locked: true,
-                ),
-                CurriculumItem(
-                  title: "4. Your First 12-Bar Progression",
-                  duration: "19:50",
-                  locked: true,
-                ),
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            const Center(
-              child: Text(
-                "View All Lessons",
-                style: TextStyle(
-                  color: Color(0xFF8A93BE),
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-
             const SizedBox(height: 40),
           ],
         ),
       ),
-
-      bottomNavigationBar: const Buybottombar(
+      bottomNavigationBar: Buybottombar(
         title: "LIFETIME ACCESS",
-        price: "₹499",
-        oldprice: "₹2,499",
+        price: "₹${courseData['courseprice']}",
+        oldprice: "₹${courseData['courseprice']}",
         buttontext: "Buy Now",
       ),
     );

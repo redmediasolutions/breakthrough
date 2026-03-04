@@ -1,44 +1,25 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
-  final _supabase = Supabase.instance.client;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  User? get currentUser => _supabase.auth.currentUser;
+  // Listen to Auth Changes (Tells the app if user is logged in or out)
+  Stream<User?> get user => _auth.authStateChanges();
 
-  Stream<AuthState> get authStateChanges =>
-      _supabase.auth.onAuthStateChange;
-
-  Future<AuthResponse> signIn({
-    required String email,
-    required String password,
-  }) async {
-    return await _supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+  // Login
+  Future<void> login(String email, String password) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
   }
 
-  Future<AuthResponse> signUp({
-    required String email,
-    required String password,
-  }) async {
-    return await _supabase.auth.signUp(
-      email: email,
-      password: password,
-    );
+  // Logout
+  Future<void> logout() async {
+    await _auth.signOut();
   }
 
-  Future<void> signOut() async {
-    await _supabase.auth.signOut();
-  }
-
-  Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    final response = await _supabase
-        .from('useraccount')
-        .select()
-        .eq('id', userId)
-        .single();
-
-    return response;
+  // Get current User Data from Firestore
+  Future<DocumentSnapshot> getUserData() async {
+    return await _firestore.collection('users').doc(_auth.currentUser!.uid).get();
   }
 }

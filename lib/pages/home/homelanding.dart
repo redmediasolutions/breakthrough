@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/components/coursecards.dart';
 import 'package:breakthrough/components/learning_prog.dart';
 import 'package:breakthrough/components/smallcoursecards.dart';
@@ -13,28 +15,32 @@ class Homelanding extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+
+    String userName = "Guest";
+    if (auth.isLoading) {
+      userName = "Loading...";
+    } else if (auth.userData != null) {
+      userName = auth.userData!['fullName'] ?? "User";
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
-
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // TOP SECTION
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () {
-                          context.pushNamed('profile');
-                        },
+                        onTap: () => context.pushNamed('profile'),
                         child: const CircleAvatar(
                           radius: 22,
                           backgroundImage: NetworkImage(
@@ -43,11 +49,10 @@ class Homelanding extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             "WELCOME BACK",
                             style: TextStyle(
                               color: Colors.white70,
@@ -55,10 +60,10 @@ class Homelanding extends StatelessWidget {
                               letterSpacing: 1,
                             ),
                           ),
-                          SizedBox(height: 3),
+                          const SizedBox(height: 3),
                           Text(
-                            "Keerthan",
-                            style: TextStyle(
+                            userName,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               letterSpacing: 1.6,
@@ -69,7 +74,6 @@ class Homelanding extends StatelessWidget {
                       ),
                     ],
                   ),
-
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
@@ -138,15 +142,13 @@ class Homelanding extends StatelessWidget {
 
             const SizedBox(height: 15),
 
-            // HORIZONTAL SCROLL
+            // HORIZONTAL SCROLL (Learning Progress)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               child: Row(
                 children: const [
                   SizedBox(width: 20),
-
-                  
                   LearningProgress(
                     lessontitle: "Lesson 4: Major Scales",
                     coursetitle: "Mastering Jazz\nGuitar",
@@ -154,8 +156,6 @@ class Homelanding extends StatelessWidget {
                     progress: 0.75,
                     buttontext: "Resume",
                   ),
-
-                  
                   LearningProgress(
                     lessontitle: "Lesson 2: Chords",
                     coursetitle: "Acoustic\nBasics",
@@ -163,8 +163,6 @@ class Homelanding extends StatelessWidget {
                     progress: 0.40,
                     buttontext: "Resume",
                   ),
-
-       
                   LearningProgress(
                     lessontitle: "Lesson 1: Introduction",
                     coursetitle: "Music Theory\nFundamentals",
@@ -172,7 +170,6 @@ class Homelanding extends StatelessWidget {
                     progress: 0.90,
                     buttontext: "Resume",
                   ),
-
                   SizedBox(width: 20),
                 ],
               ),
@@ -180,125 +177,139 @@ class Homelanding extends StatelessWidget {
 
             const SizedBox(height: 30),
             Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      const Text(
-        "Featured Courses",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          letterSpacing: 1.3,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-
-      // TRENDING 
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1437EF).withOpacity(0.2), // light blue bg
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Text(
-          "TRENDING",
-          style: TextStyle(
-            color: Color(0xFF1437EF), // blue text
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
-        ),
-      ),
-    ],
-  ),
-),
-const SizedBox(height: 18),
-
-// Courses List
-SizedBox(
-  height: 240,
-  child: StreamBuilder<List<Coursesmodel>>(
-    stream: FirestoreService().listofCourses,
-    builder: (context, snapshot) {
-
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Center(child: CircularProgressIndicator());
-      }
-
-      if (!snapshot.hasData || snapshot.data!.isEmpty) {
-        return const Center(child: Text("No courses available"));
-      }
-
-      final courses = snapshot.data!;
-
-      return ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: courses.length,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemBuilder: (context, index) {
-
-          final course = courses[index];
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Coursecards(
-              img: course.courseimage,
-              lessons: "${course.userssignedup} Lessons",
-              title: course.coursename,
-              instructor: course.coursedescription,
-              price: "₹${course.courseprice}",
-              oldPrice: "₹${course.courseprice}",
-              rating: (course.userssignedup).toDouble(),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Featured Courses",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      letterSpacing: 1.3,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1437EF).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "TRENDING",
+                      style: TextStyle(
+                        color: Color(0xFF1437EF),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        },
-      );
-    },
-  ),
-),
+            const SizedBox(height: 18),
 
+            // Courses List (Dynamic)
+            SizedBox(
+              height: 240,
+              child: StreamBuilder<List<Coursesmodel>>(
+                stream: FirestoreService().listofCourses,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No courses available",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+                  final courses = snapshot.data!;
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: courses.length,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: GestureDetector(
+                          onTap: () {
+      
+                            context.pushNamed(
+                              'coursedetails',
+                              extra: {
+                                'coursename': course.coursename,
+                                'courseprice': course.courseprice,
+                                'coursedescription': course.coursedescription,
+                                'instructorID': '3hhF8aleV8pTbbXgho5J',
+                                'courseimage': course.courseimage,
+                              },
+                            );
+                          },
+                          child: Coursecards(
+                            img: course.courseimage,
+                            lessons: "${course.userssignedup} Lessons",
+                            title: course.coursename,
+                            instructor: course.coursedescription,
+                            price: "₹${course.courseprice}",
+                            oldPrice: "₹${course.courseprice}",
+                            rating: (course.userssignedup).toDouble(),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
 
-const SizedBox(height: 30),
+            const SizedBox(height: 30),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                "Budget Friendly Picks",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  letterSpacing: 1.3,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
 
-const Padding(
-  padding: EdgeInsets.symmetric(horizontal: 20),
-  child: Text(
-    "Budget Friendly Picks",
-    style: TextStyle(
-      color: Colors.white,
-      fontSize: 16,
-      letterSpacing: 1.3,
-      fontWeight: FontWeight.bold,
-    ),
-  ),
-),
-
-const SizedBox(height: 20),
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: Column(
-    children: const [
-      SmallCourseCard(
-        img: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGlhbm98ZW58MHx8MHx8fDA%3D",
-        title: "Rock Drumming Basics",
-        instructor: "James Taylor",
-        price: "₹299",
-        discount: "70% OFF",
-      ),
-      SmallCourseCard(
-        img: "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGlhbm98ZW58MHx8MHx8fDA%3D",
-        title: "Rock Drumming Basics",
-        instructor: "James Taylor",
-        price: "₹499",
-        discount: "LIMITED",
-      ),
-    ],
-  ),
-),
-
-          ]
+            const SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                children: const [
+                  SmallCourseCard(
+                    img:
+                        "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60",
+                    title: "Rock Drumming Basics",
+                    instructor: "James Taylor",
+                    price: "₹299",
+                    discount: "70% OFF",
+                  ),
+                  SmallCourseCard(
+                    img:
+                        "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=500&auto=format&fit=crop&q=60",
+                    title: "Rock Drumming Basics",
+                    instructor: "James Taylor",
+                    price: "₹499",
+                    discount: "LIMITED",
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
