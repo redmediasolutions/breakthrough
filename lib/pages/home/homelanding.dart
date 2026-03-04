@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/coursecards.dart';
-import 'package:musiclearner/components/learning_prog.dart';
-import 'package:musiclearner/components/smallcoursecards.dart';
-import 'package:musiclearner/model/coursesmodel.dart';
-import 'package:musiclearner/services/firestore.dart';
+import 'package:breakthrough/components/coursecards.dart';
+import 'package:breakthrough/components/learning_prog.dart';
+import 'package:breakthrough/components/smallcoursecards.dart';
+import 'package:breakthrough/model/coursesmodel.dart';
+import 'package:breakthrough/services/firestore.dart';
 
 class Homelanding extends StatelessWidget {
   const Homelanding({super.key});
@@ -244,13 +244,13 @@ SizedBox(
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Coursecards(
-              img: course.courseimage ?? "",
-              lessons: "${course.userssignedup ?? 0} Lessons",
-              title: course.coursename ?? "Untitled",
-              instructor: course.coursedescription ?? "",
-              price: "₹${course.courseprice ?? 0}",
-              oldPrice: "₹${course.courseprice ?? 0}",
-              rating: (course.userssignedup ?? 0).toDouble(),
+              img: course.courseimage,
+              lessons: "${course.userssignedup} Lessons",
+              title: course.coursename,
+              instructor: course.coursedescription,
+              price: "₹${course.courseprice}",
+              oldPrice: "₹${course.courseprice}",
+              rating: (course.userssignedup).toDouble(),
             ),
           );
         },

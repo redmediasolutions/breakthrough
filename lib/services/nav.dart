@@ -1,21 +1,21 @@
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 
-import 'package:musiclearner/services/auth_provider.dart';
-import 'package:musiclearner/services/shellbottom.dart';
+import 'package:breakthrough/services/auth_provider.dart';
+import 'package:breakthrough/services/shellbottom.dart';
 
-import 'package:musiclearner/pages/accountsettings/accountsettings.dart';
-import 'package:musiclearner/pages/buynow/buynow.dart';
-import 'package:musiclearner/pages/forgotpassword/forgotpassword.dart';
-import 'package:musiclearner/pages/learning/learning.dart';
-import 'package:musiclearner/pages/login/login.dart';
-import 'package:musiclearner/pages/home/homelanding.dart';
-import 'package:musiclearner/pages/coursedetails/coursedetails.dart';
-import 'package:musiclearner/pages/lessonplayer/lessonplayer.dart';
-import 'package:musiclearner/pages/purchasehistory/purchasehistory.dart';
-import 'package:musiclearner/pages/signup/signup.dart';
-import 'package:musiclearner/pages/explore/explore.dart';
-import 'package:musiclearner/pages/profile/profile.dart';
+import 'package:breakthrough/pages/accountsettings/accountsettings.dart';
+import 'package:breakthrough/pages/buynow/buynow.dart';
+import 'package:breakthrough/pages/forgotpassword/forgotpassword.dart';
+import 'package:breakthrough/pages/learning/learning.dart';
+import 'package:breakthrough/pages/login/login.dart';
+import 'package:breakthrough/pages/home/homelanding.dart';
+import 'package:breakthrough/pages/coursedetails/coursedetails.dart';
+import 'package:breakthrough/pages/lessonplayer/lessonplayer.dart';
+import 'package:breakthrough/pages/purchasehistory/purchasehistory.dart';
+import 'package:breakthrough/pages/signup/signup.dart';
+import 'package:breakthrough/pages/explore/explore.dart';
+import 'package:breakthrough/pages/profile/profile.dart';
 
 final GlobalKey<NavigatorState> shellNavigatorKey =
     GlobalKey<NavigatorState>();

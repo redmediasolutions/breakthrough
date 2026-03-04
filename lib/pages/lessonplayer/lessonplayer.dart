@@ -1,11 +1,11 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:breakthrough/components/next_lesson.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/aboutinstructor.dart';
+import 'package:breakthrough/components/aboutinstructor.dart';
 //import 'package:musiclearner/components/custombottomlesson.dart';
-import 'package:musiclearner/components/next_lesson.dart';
-import 'package:musiclearner/components/videoplayer.dart';
+import 'package:breakthrough/components/videoplayer.dart';
 
 class Lessonplayer extends StatelessWidget {
   const Lessonplayer({super.key});

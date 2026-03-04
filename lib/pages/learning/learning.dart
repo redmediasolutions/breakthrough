@@ -1,7 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:musiclearner/components/learning_prog.dart';
+import 'package:breakthrough/components/learning_prog.dart';
 
 class Learning extends StatelessWidget {
   const Learning({super.key});

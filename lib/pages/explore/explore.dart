@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/categorysign.dart';
-import 'package:musiclearner/components/coursecards.dart';
-import 'package:musiclearner/components/topinstructor.dart';
+import 'package:breakthrough/components/categorysign.dart';
+import 'package:breakthrough/components/coursecards.dart';
+import 'package:breakthrough/components/topinstructor.dart';
 
 class Explore extends StatelessWidget {
   const Explore({super.key});

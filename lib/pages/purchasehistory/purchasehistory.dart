@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/purchasecard.dart';
+import 'package:breakthrough/components/purchasecard.dart';
 
 
 class Purchasehistory extends StatelessWidget {

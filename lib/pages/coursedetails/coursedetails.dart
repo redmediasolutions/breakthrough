@@ -2,10 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/aboutinstructor.dart';
-import 'package:musiclearner/components/buybottombar.dart';
-import 'package:musiclearner/components/curriculumcards.dart';
-import 'package:musiclearner/components/videoplayer.dart';
+import 'package:breakthrough/components/aboutinstructor.dart';
+import 'package:breakthrough/components/buybottombar.dart';
+import 'package:breakthrough/components/curriculumcards.dart';
+import 'package:breakthrough/components/videoplayer.dart';
 
 
 class Coursedetails extends StatelessWidget {

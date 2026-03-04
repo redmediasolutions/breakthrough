@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_print
+
+import 'package:breakthrough/model/coursesmodel.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:musiclearner/model/coursesmodel.dart';
+
 
 
 class FirestoreService {

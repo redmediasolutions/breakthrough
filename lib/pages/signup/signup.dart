@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/categorysign.dart';
+import 'package:breakthrough/components/categorysign.dart';
 
 class Signup extends StatelessWidget {
   const Signup({super.key});

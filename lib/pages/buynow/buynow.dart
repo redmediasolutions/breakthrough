@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:musiclearner/components/buycoursecard.dart';
-import 'package:musiclearner/components/ordersummary.dart';
-import 'package:musiclearner/components/paymentmethod.dart';
+import 'package:breakthrough/components/buycoursecard.dart';
+import 'package:breakthrough/components/ordersummary.dart';
+import 'package:breakthrough/components/paymentmethod.dart';
 
 class Buynow extends StatelessWidget {
   const Buynow({super.key});
