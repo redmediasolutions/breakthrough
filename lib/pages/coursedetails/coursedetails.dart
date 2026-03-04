@@ -14,17 +14,9 @@ class Coursedetails extends StatelessWidget {
 
   const Coursedetails({super.key, required this.courseData});
 
-  @override
-  Widget build(BuildContext context) {
-    // 1. FORCED FALLBACK: We use the ID from your screenshot if navigation fails.
-    // This removes the "ID Missing" screen entirely.
-    String rawID = courseData['instructorID'] ?? "";
-    String cleanID = rawID.toString().trim();
-
-    if (cleanID.isEmpty) {
-      // Hardcoded ID from your Firestore screenshot to force it to work
-      cleanID = "3hhF8aleV8pTbbXgho5J"; 
-    }
+ @override
+Widget build(BuildContext context) {
+  final dynamic instructorRef = courseData['instructorRef'];
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
@@ -35,11 +27,19 @@ class Coursedetails extends StatelessWidget {
         centerTitle: true,
         leading: IconButton(
           onPressed: () => context.go('/home'),
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
         ),
         title: const Text(
           "Course Details",
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         actions: [
           IconButton(
@@ -48,83 +48,100 @@ class Coursedetails extends StatelessWidget {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+
             const SizedBox(height: 20),
 
-            // VIDEO PLAYER
+            /// VIDEO PLAYER
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Videoplayer(
-                videourl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                videourl:
+                    "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
                 thumbnailurl: courseData['courseimage'] ?? "",
               ),
             ),
 
             const SizedBox(height: 20),
 
-            // DYNAMIC INSTRUCTOR SECTION
-            StreamBuilder<DocumentSnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('instructors') // Ensure plural 'instructors'
-                  .doc(cleanID) 
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: CircularProgressIndicator(),
-                  );
-                }
+            /// INSTRUCTOR SECTION
+            if (instructorRef != null && instructorRef is DocumentReference)
+              StreamBuilder<DocumentSnapshot>(
+                stream: instructorRef.snapshots(),
+                builder: (context, snapshot) {
 
-                // Final check to see if the ID exists in the 'instructors' collection
-                if (!snapshot.hasData || snapshot.data?.data() == null) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      "Instructor not found in database",
-                      style: TextStyle(color: Colors.white60),
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  if (!snapshot.hasData || snapshot.data?.data() == null) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Instructor not found",
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                    );
+                  }
+
+                  final rawData =
+                      snapshot.data!.data() as Map<String, dynamic>;
+
+                  final instructor =
+                      InstructorModel.fromMap(rawData, snapshot.data!.id);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Aboutinstructor(
+                      name: instructor.name,
+                      subtitle: instructor.subtitle,
+                      img: instructor.imageUrl,
+                      rating: instructor.rating,
+                      students: instructor.students,
                     ),
                   );
-                }
+                },
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  "Instructor information unavailable",
+                  style: TextStyle(color: Colors.white60),
+                ),
+              ),
 
-                final rawData = snapshot.data!.data() as Map<String, dynamic>;
-                // InstructorModel.fromMap must handle string-to-double rating conversion
-                final instructor = InstructorModel.fromMap(rawData, snapshot.data!.id);
+            const SizedBox(height: 20),
 
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Aboutinstructor(
-                    name: instructor.name,
-                    subtitle: instructor.subtitle,
-                    img: instructor.imageUrl,
-                    rating: instructor.rating,
-                    students: instructor.students,
-                  ),
-                );
-              },
+            /// COURSE TITLE
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                courseData['coursename'] ?? "Untitled Course",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  height: 1.3,
+                ),
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            // TITLE & DESCRIPTION
+            /// DESCRIPTION
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    courseData['coursename'] ?? "Untitled Course",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   const Text(
                     "ABOUT THIS COURSE",
                     style: TextStyle(
@@ -136,7 +153,8 @@ class Coursedetails extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    courseData['coursedescription'] ?? "No description available.",
+                    courseData['coursedescription'] ??
+                        "No description available.",
                     style: const TextStyle(
                       color: Colors.white60,
                       fontSize: 14,
@@ -149,7 +167,7 @@ class Coursedetails extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // CURRICULUM
+            /// CURRICULUM
             CurriculumList(
               lessons: [
                 CurriculumItem(
@@ -165,10 +183,12 @@ class Coursedetails extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 40),
           ],
         ),
       ),
+
       bottomNavigationBar: Buybottombar(
         title: "LIFETIME ACCESS",
         price: "₹${courseData['courseprice']}",

@@ -8,14 +8,13 @@ class Coursesmodel {
   final String courseimage;
   final String courseprice;
   final bool isPublished;
-  final String instructorID; 
-
+  final String instructorID;
 
   // SYSTEM VALUES
   final Timestamp createdAt;
   final Timestamp lastUpdated;
 
-  // Analytics 
+  // Analytics
   final int userssignedup;
 
   Coursesmodel({
@@ -27,21 +26,34 @@ class Coursesmodel {
     required this.lastUpdated,
     required this.userssignedup,
     required this.isPublished,
-    required this.instructorID, 
+    required this.instructorID,
   });
 
-  factory Coursesmodel.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
-  final data = doc.data()!;
-  return Coursesmodel(
-    coursename: data['coursename'] ?? '',
-    coursedescription: data['coursedescription'] ?? '',
-    courseimage: data['courseimage'] ?? '',
-    courseprice: data['courseprice'] ?? '',
-    createdAt: data['createdAt'],
-    lastUpdated: data['lastUpdated'],
-    userssignedup: data['userssignedup'] ?? 0,
-    isPublished: data['isPublished'] ?? false,
-    instructorID: data['instructorID'] ?? '', 
-  );
-}
+  factory Coursesmodel.fromFirestore(
+      DocumentSnapshot<Map<String, dynamic>> doc) {
+
+    final data = doc.data()!;
+
+    String instructorId = '';
+
+    final instructorField = data['instructorID'];
+
+    if (instructorField is DocumentReference) {
+      instructorId = instructorField.id;
+    } else if (instructorField is String) {
+      instructorId = instructorField;
+    }
+
+    return Coursesmodel(
+      coursename: data['coursename'] ?? '',
+      coursedescription: data['coursedescription'] ?? '',
+      courseimage: data['courseimage'] ?? '',
+      courseprice: data['courseprice'] ?? '',
+      createdAt: data['createdAt'],
+      lastUpdated: data['lastUpdated'],
+      userssignedup: data['userssignedup'] ?? 0,
+      isPublished: data['isPublished'] ?? false,
+      instructorID: instructorId,
+    );
+  }
 }
