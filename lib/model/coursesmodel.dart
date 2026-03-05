@@ -9,6 +9,7 @@ class Coursesmodel {
   final String courseprice;
   final bool isPublished;
   final String instructorID;
+  final DocumentReference<Map<String, dynamic>>? instructorRef;
 
   // SYSTEM VALUES
   final Timestamp createdAt;
@@ -27,6 +28,7 @@ class Coursesmodel {
     required this.userssignedup,
     required this.isPublished,
     required this.instructorID,
+    this.instructorRef,
   });
 
   factory Coursesmodel.fromFirestore(
@@ -35,13 +37,21 @@ class Coursesmodel {
     final data = doc.data()!;
 
     String instructorId = '';
+    DocumentReference<Map<String, dynamic>>? normalizedInstructorRef;
 
     final instructorField = data['instructorID'];
 
-    if (instructorField is DocumentReference) {
+    if (instructorField is DocumentReference<Map<String, dynamic>>) {
+      normalizedInstructorRef = instructorField;
+      instructorId = instructorField.id;
+    } else if (instructorField is DocumentReference) {
+      normalizedInstructorRef = FirebaseFirestore.instance.doc(instructorField.path);
       instructorId = instructorField.id;
     } else if (instructorField is String) {
-      instructorId = instructorField;
+      final normalized = instructorField.startsWith('/')
+          ? instructorField.substring(1)
+          : instructorField;
+      instructorId = normalized.contains('/') ? normalized.split('/').last : normalized;
     }
 
     return Coursesmodel(
@@ -54,6 +64,7 @@ class Coursesmodel {
       userssignedup: data['userssignedup'] ?? 0,
       isPublished: data['isPublished'] ?? false,
       instructorID: instructorId,
+      instructorRef: normalizedInstructorRef,
     );
   }
 }

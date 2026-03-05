@@ -74,14 +74,14 @@ GoRoute(
   builder: (context, state) {
     final extra = state.extra;
 
-    if (extra == null || extra is! Map<String, dynamic>) {
+    if (extra == null || extra is! Map) {
       // If data is missing, we check if we can fallback to a previous state
       return const Scaffold(
         body: Center(child: Text("Course data missing")),
       );
     }
 
-    return Coursedetails(courseData: extra);
+    return Coursedetails(courseData: Map<String, dynamic>.from(extra));
   },
 ),
 

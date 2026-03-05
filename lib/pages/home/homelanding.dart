@@ -216,7 +216,7 @@ class Homelanding extends StatelessWidget {
 
             // Courses List (Dynamic)
             SizedBox(
-              height: 240,
+              height: 260,
               child: StreamBuilder<List<Coursesmodel>>(
                 stream: FirestoreService().listofCourses,
                 builder: (context, snapshot) {
@@ -249,7 +249,8 @@ class Homelanding extends StatelessWidget {
                                 'coursename': course.coursename,
                                 'courseprice': course.courseprice,
                                 'coursedescription': course.coursedescription,
-                                'instructorID': '3hhF8aleV8pTbbXgho5J',
+                                'instructorID': course.instructorID,
+                                'instructorRef': course.instructorRef,
                                 'courseimage': course.courseimage,
                               },
                             );

@@ -5,11 +5,13 @@ class UserModel {
   final String fullName;
   final String email;
   final String role; 
+  final int phoneno; 
 
   UserModel({
     required this.uid,
     required this.fullName,
     required this.email,
+    required this.phoneno,
     this.role = 'student', 
   });
 
@@ -19,6 +21,7 @@ class UserModel {
       'uid': uid,
       'fullName': fullName,
       'email': email,
+      'phoneno': phoneno,
       'role': role,
       'createdAt': FieldValue.serverTimestamp(),
     };
@@ -29,8 +32,14 @@ class UserModel {
     return UserModel(
       uid: map['uid'] ?? '',
       fullName: map['fullName'] ?? '',
+      phoneno: _parsePhoneNumber(map['phoneno'] ?? map['phoneNo']),
       email: map['email'] ?? '',
       role: map['role'] ?? 'student',
     );
+  }
+
+  static int _parsePhoneNumber(dynamic value) {
+    if (value is num) return value.toInt();
+    return int.tryParse(value?.toString() ?? '') ?? 0;
   }
 }

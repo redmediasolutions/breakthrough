@@ -14,9 +14,31 @@ class Coursedetails extends StatelessWidget {
 
   const Coursedetails({super.key, required this.courseData});
 
- @override
-Widget build(BuildContext context) {
-  final dynamic instructorRef = courseData['instructorRef'];
+  DocumentReference<Map<String, dynamic>>? _resolveInstructorRef() {
+    final dynamic instructorRef = courseData['instructorRef'];
+    if (instructorRef is DocumentReference<Map<String, dynamic>>) {
+      return instructorRef;
+    }
+    if (instructorRef is DocumentReference) {
+      return FirebaseFirestore.instance.doc(instructorRef.path);
+    }
+
+    final dynamic instructorIdField = courseData['instructorID'];
+    if (instructorIdField is String && instructorIdField.trim().isNotEmpty) {
+      final raw = instructorIdField.trim();
+      final normalized = raw.startsWith('/') ? raw.substring(1) : raw;
+      if (normalized.contains('/')) {
+        return FirebaseFirestore.instance.doc(normalized);
+      }
+      return FirebaseFirestore.instance.collection('instructors').doc(normalized);
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final instructorRef = _resolveInstructorRef();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
@@ -69,8 +91,8 @@ Widget build(BuildContext context) {
             const SizedBox(height: 20),
 
             /// INSTRUCTOR SECTION
-            if (instructorRef != null && instructorRef is DocumentReference)
-              StreamBuilder<DocumentSnapshot>(
+            if (instructorRef != null)
+              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 stream: instructorRef.snapshots(),
                 builder: (context, snapshot) {
 
@@ -78,6 +100,16 @@ Widget build(BuildContext context) {
                     return const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: CircularProgressIndicator(),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Unable to load instructor: ${snapshot.error}",
+                        style: const TextStyle(color: Colors.white60),
+                      ),
                     );
                   }
 
@@ -91,8 +123,7 @@ Widget build(BuildContext context) {
                     );
                   }
 
-                  final rawData =
-                      snapshot.data!.data() as Map<String, dynamic>;
+                  final rawData = snapshot.data!.data()!;
 
                   final instructor =
                       InstructorModel.fromMap(rawData, snapshot.data!.id);
