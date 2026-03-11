@@ -8,6 +8,7 @@ class SmallCourseCard extends StatelessWidget {
   final String instructor;
   final String price;
   final VoidCallback? onTap;
+  final bool showPrice;
 
   const SmallCourseCard({
     super.key,
@@ -16,6 +17,7 @@ class SmallCourseCard extends StatelessWidget {
     required this.instructor,
     required this.price,
     this.onTap,
+    this.showPrice = true,
   });
 
   @override
@@ -74,14 +76,15 @@ class SmallCourseCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                Text(
-                  price,
-                  style: const TextStyle(
-                    color: Color(0xFF1437EF),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                  ),
-                )
+                if (showPrice)
+                  Text(
+                    price,
+                    style: const TextStyle(
+                      color: Color(0xFF1437EF),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  )
               ],
             ),
           ),

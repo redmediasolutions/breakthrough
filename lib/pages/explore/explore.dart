@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:breakthrough/components/categorysign.dart';
 import 'package:breakthrough/components/coursecards.dart';
 import 'package:breakthrough/components/topinstructor.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:breakthrough/model/coursesmodel.dart';
 import 'package:breakthrough/model/instructormodel.dart';
+import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/services/firestore.dart';
 
 class Explore extends StatelessWidget {
@@ -32,6 +34,7 @@ class Explore extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
 
@@ -177,7 +180,17 @@ class Explore extends StatelessWidget {
                           builder: (context) {
                             final instructorRef =
                                 _resolveInstructorRef(course);
-                            if (instructorRef == null) {
+                            final user = auth.user;
+                            final userRef = user == null
+                                ? null
+                                : FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid);
+                            final courseRef = FirebaseFirestore.instance
+                                .collection('Courses')
+                                .doc(course.id);
+
+                            if (userRef == null) {
                               return GestureDetector(
                                 onTap: () {
                                   context.pushNamed(
@@ -185,9 +198,7 @@ class Explore extends StatelessWidget {
                                     extra: {
                                       'coursename': course.coursename,
                                       'courseId': course.id,
-                                      'courseRef': FirebaseFirestore.instance
-                                          .collection('Courses')
-                                          .doc(course.id),
+                                      'courseRef': courseRef,
                                       'courseprice': course.courseprice,
                                       'coursedescription':
                                           course.coursedescription,
@@ -203,54 +214,97 @@ class Explore extends StatelessWidget {
                                       "${course.userssignedup} Lessons",
                                   title: course.coursename,
                                   instructor: "Instructor",
-                                  price: "₹${course.courseprice}",
+                                  price: "\u20B9${course.courseprice}",
                                 ),
                               );
                             }
 
-                            return StreamBuilder<
-                                DocumentSnapshot<Map<String, dynamic>>>(
-                              stream: instructorRef.snapshots(),
-                              builder: (context, snapshot) {
-                                String instructorName = "Instructor";
-                                if (snapshot.hasData &&
-                                    snapshot.data?.data() != null) {
-                                  final instructor = InstructorModel.fromMap(
-                                    snapshot.data!.data()!,
-                                    snapshot.data!.id,
+                            return StreamBuilder<bool>(
+                              stream: FirestoreService().isEnrolled(
+                                userRef: userRef,
+                                courseRef: courseRef,
+                              ),
+                              builder: (context, enrolledSnap) {
+                                final isEnrolled =
+                                    enrolledSnap.data ?? false;
+
+                                if (instructorRef == null) {
+                                  return GestureDetector(
+                                    onTap: () {
+                                      context.pushNamed(
+                                        'coursedetails',
+                                        extra: {
+                                          'coursename': course.coursename,
+                                          'courseId': course.id,
+                                          'courseRef': courseRef,
+                                          'courseprice': course.courseprice,
+                                          'coursedescription':
+                                              course.coursedescription,
+                                          'instructorID': course.instructorID,
+                                          'instructorRef': course.instructorRef,
+                                          'courseimage': course.courseimage,
+                                        },
+                                      );
+                                    },
+                                    child: Coursecards(
+                                      img: course.courseimage,
+                                      lessons:
+                                          "${course.userssignedup} Lessons",
+                                      title: course.coursename,
+                                      instructor: "Instructor",
+                                      price: "\u20B9${course.courseprice}",
+                                      showPrice: !isEnrolled,
+                                    ),
                                   );
-                                  instructorName = instructor.name.isNotEmpty
-                                      ? instructor.name
-                                      : instructorName;
                                 }
 
-                                return GestureDetector(
-                                  onTap: () {
-                                    context.pushNamed(
-                                      'coursedetails',
-                                      extra: {
-                                        'coursename': course.coursename,
-                                        'courseId': course.id,
-                                        'courseRef': FirebaseFirestore.instance
-                                            .collection('Courses')
-                                            .doc(course.id),
-                                        'courseprice': course.courseprice,
-                                        'coursedescription':
-                                            course.coursedescription,
-                                        'instructorID': course.instructorID,
-                                        'instructorRef': course.instructorRef,
-                                        'courseimage': course.courseimage,
+                                return StreamBuilder<
+                                    DocumentSnapshot<Map<String, dynamic>>>(
+                                  stream: instructorRef.snapshots(),
+                                  builder: (context, snapshot) {
+                                    String instructorName = "Instructor";
+                                    if (snapshot.hasData &&
+                                        snapshot.data?.data() != null) {
+                                      final instructor =
+                                          InstructorModel.fromMap(
+                                        snapshot.data!.data()!,
+                                        snapshot.data!.id,
+                                      );
+                                      instructorName =
+                                          instructor.name.isNotEmpty
+                                              ? instructor.name
+                                              : instructorName;
+                                    }
+
+                                    return GestureDetector(
+                                      onTap: () {
+                                        context.pushNamed(
+                                          'coursedetails',
+                                          extra: {
+                                            'coursename': course.coursename,
+                                            'courseId': course.id,
+                                            'courseRef': courseRef,
+                                            'courseprice': course.courseprice,
+                                            'coursedescription':
+                                                course.coursedescription,
+                                            'instructorID': course.instructorID,
+                                            'instructorRef':
+                                                course.instructorRef,
+                                            'courseimage': course.courseimage,
+                                          },
+                                        );
                                       },
+                                      child: Coursecards(
+                                        img: course.courseimage,
+                                        lessons:
+                                            "${course.userssignedup} Lessons",
+                                        title: course.coursename,
+                                        instructor: instructorName,
+                                        price: "\u20B9${course.courseprice}",
+                                        showPrice: !isEnrolled,
+                                      ),
                                     );
                                   },
-                                  child: Coursecards(
-                                    img: course.courseimage,
-                                    lessons:
-                                        "${course.userssignedup} Lessons",
-                                    title: course.coursename,
-                                    instructor: instructorName,
-                                    price: "₹${course.courseprice}",
-                                  ),
                                 );
                               },
                             );
