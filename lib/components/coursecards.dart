@@ -8,8 +8,6 @@ class Coursecards extends StatelessWidget {
   final String title;
   final String instructor;
   final String price;
-  final String oldPrice;
-  final double rating;
   final VoidCallback? onTap;
 
   const Coursecards({
@@ -19,8 +17,6 @@ class Coursecards extends StatelessWidget {
     required this.title,
     required this.instructor,
     required this.price,
-    required this.oldPrice,
-    required this.rating,
     this.onTap,
   });
 
@@ -114,60 +110,14 @@ class Coursecards extends StatelessWidget {
                       ),
                     ),
         
-                    // PRICE AND RATING ROW
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Price Section
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Text(
-                                price,
-                                style: const TextStyle(
-                                  color: Color(0xFF1437EF),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  oldPrice,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white38,
-                                    fontSize: 13,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-        
-                        // Rating Section
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              size: 16,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 5),
-                            Text(
-                              rating.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    )
+                    Text(
+                      price,
+                      style: const TextStyle(
+                        color: Color(0xFF1437EF),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ),

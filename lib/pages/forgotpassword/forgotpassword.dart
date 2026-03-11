@@ -145,7 +145,10 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                                 ),
                               );
                               // Go back to login after sending
-                              context.pop(); 
+                              await FirebaseAuth.instance.signOut();
+                              if (context.mounted) {
+                                context.go('/login');
+                              }
                             }
                           } on FirebaseAuthException catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -199,7 +202,12 @@ class _ForgotpasswordState extends State<Forgotpassword> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () => context.pushNamed('loginpage'),
+                    onTap: () async {
+                      await FirebaseAuth.instance.signOut();
+                      if (context.mounted) {
+                        context.go('/login');
+                      }
+                    },
                     child: const Text(
                       "Back to Login",
                       style: TextStyle(

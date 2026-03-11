@@ -2,9 +2,114 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:breakthrough/services/auth_provider.dart';
+import 'package:breakthrough/model/usermodel.dart';
 
-class Accountsettings extends StatelessWidget {
+class Accountsettings extends StatefulWidget {
   const Accountsettings({super.key});
+
+  @override
+  State<Accountsettings> createState() => _AccountsettingsState();
+}
+
+class _AccountsettingsState extends State<Accountsettings> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+
+  bool _didInit = false;
+  bool _isSaving = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInit) return;
+    _didInit = true;
+
+    final auth = context.read<AuthProvider>();
+    final userData = auth.userData;
+    if (userData != null) {
+      _nameController.text = userData['fullName']?.toString() ?? '';
+      _emailController.text = userData['email']?.toString() ?? '';
+      final phoneValue =
+          userData['phoneno'] ?? userData['phoneNo'] ?? userData['phone'];
+      _phoneController.text = phoneValue?.toString() ?? '';
+    } else if (auth.user != null) {
+      _emailController.text = auth.user!.email ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveChanges() async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+    if (user == null) {
+      _showSnack("Please login to save changes.");
+      return;
+    }
+
+    final fullName = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phoneRaw = _phoneController.text.trim();
+    final phoneNumber = int.tryParse(phoneRaw);
+
+    if (fullName.isEmpty) {
+      _showSnack("Full name is required.");
+      return;
+    }
+    if (email.isEmpty) {
+      _showSnack("Email is required.");
+      return;
+    }
+    if (phoneNumber == null) {
+      _showSnack("Enter a valid phone number.");
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final model = UserModel(
+        uid: user.uid,
+        fullName: fullName,
+        email: email,
+        phoneno: phoneNumber,
+        role: (auth.userData?['role'] ?? 'student').toString(),
+      );
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(model.toMap(), SetOptions(merge: true));
+
+      await auth.fetchUserData();
+
+      if (!mounted) return;
+      _showSnack("Profile updated successfully.");
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack("Failed to update profile.");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +138,7 @@ class Accountsettings extends StatelessWidget {
             ),
         actions: [
           TextButton(
-            onPressed: () {
-              context.go('/profile');
-            },
+            onPressed: _isSaving ? null : _saveChanges,
             child: const Text(
               "Save",
               style: TextStyle(
@@ -163,49 +266,28 @@ Padding(
       children: [
 
         // FULL NAME
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          title: const Text(
-            "FULL NAME",
-            style: TextStyle(color: Colors.white38, fontSize: 10),
-          ),
-          subtitle: const Text(
-            "Keerthan Rao",
-            style: TextStyle(color: Colors.white, fontSize: 15),
-          ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+        _EditableField(
+          label: "FULL NAME",
+          controller: _nameController,
+          keyboardType: TextInputType.name,
         ),
 
         const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
 
         // EMAIL ADDRESS
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          title: const Text(
-            "EMAIL ADDRESS",
-            style: TextStyle(color: Colors.white38, fontSize: 10),
-          ),
-          subtitle: const Text(
-            "keerthanrao8@gmail.com",
-            style: TextStyle(color: Colors.white, fontSize: 15),
-          ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+        _EditableField(
+          label: "EMAIL ADDRESS",
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
         ),
 
         const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
 
         // PHONE NUMBER
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          title: const Text(
-            "PHONE NUMBER",
-            style: TextStyle(color: Colors.white38, fontSize: 10),
-          ),
-          subtitle: const Text(
-            "+91 8867788898",
-            style: TextStyle(color: Colors.white, fontSize: 15),
-          ),
-          trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+        _EditableField(
+          label: "PHONE NUMBER",
+          controller: _phoneController,
+          keyboardType: TextInputType.phone,
         ),
       ],
     ),
@@ -260,6 +342,7 @@ Padding(
             ),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white30),
+          onTap: () => context.go('/forgot'),
         ),
 
         const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
@@ -310,6 +393,44 @@ Padding(
       ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _EditableField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final TextInputType keyboardType;
+
+  const _EditableField({
+    required this.label,
+    required this.controller,
+    required this.keyboardType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white38, fontSize: 10),
+          ),
+          const SizedBox(height: 6),
+          TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(color: Colors.white, fontSize: 15),
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              isDense: true,
+            ),
+          ),
+        ],
       ),
     );
   }

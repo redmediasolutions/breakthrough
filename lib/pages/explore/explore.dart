@@ -3,9 +3,32 @@ import 'package:go_router/go_router.dart';
 import 'package:breakthrough/components/categorysign.dart';
 import 'package:breakthrough/components/coursecards.dart';
 import 'package:breakthrough/components/topinstructor.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:breakthrough/model/coursesmodel.dart';
+import 'package:breakthrough/model/instructormodel.dart';
+import 'package:breakthrough/services/firestore.dart';
 
 class Explore extends StatelessWidget {
   const Explore({super.key});
+
+  DocumentReference<Map<String, dynamic>>? _resolveInstructorRef(
+      Coursesmodel course) {
+    if (course.instructorRef != null) {
+      return course.instructorRef;
+    }
+
+    final raw = course.instructorID.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    final normalized = raw.startsWith('/') ? raw.substring(1) : raw;
+    if (normalized.contains('/')) {
+      return FirebaseFirestore.instance.doc(normalized);
+    }
+
+    return FirebaseFirestore.instance.collection('instructors').doc(normalized);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +40,7 @@ class Explore extends StatelessWidget {
         elevation: 0,
         centerTitle: true,
 
-        leading: GestureDetector(
-          onTap: () {
-            context.pushNamed('profile');
-          },
-          child: const Padding(
-            padding: EdgeInsets.only(left: 16.0),
-            child: CircleAvatar(
-              radius: 22,
-              backgroundImage: NetworkImage(
-                "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop&q=60",
-              ),
-            ),
-          ),
-        ),
+        leading: const SizedBox.shrink(),
 
         title: const Text(
           "Explore",
@@ -54,7 +64,6 @@ class Explore extends StatelessWidget {
                   color: Colors.white, size: 22),
             ),
           ),
-          
         ],
       ),
 
@@ -138,61 +147,119 @@ class Explore extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: const [
-                  Coursecards(
-                    img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-                    lessons: "12 Lessons",
-                    title: "Pro Mixing Secrets",
-                    instructor: "David Miller",
-                    price: "₹499",
-                    oldPrice: "₹1,899",
-                    rating: 4.9,
-                  ),
-                  SizedBox(width: 15),
-                  Coursecards(
-                    img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-                    lessons: "9 Lessons",
-                    title: "Guitar Masterclass",
-                    instructor: "Arjun Rao",
-                    price: "₹699",
-                    oldPrice: "₹2,499",
-                    rating: 4.7,
-                  ),
-                  SizedBox(width: 15),
-                  Coursecards(
-                    img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-                    lessons: "15 Lessons",
-                    title: "Piano Mastery",
-                    instructor: "Sarah Jenkins",
-                    price: "₹899",
-                    oldPrice: "₹2,999",
-                    rating: 4.8,
-                  ),
-                  SizedBox(width: 15),
-                  Coursecards(
-                    img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-                    lessons: "8 Lessons",
-                    title: "Drumming Basics",
-                    instructor: "Mike Portnoy",
-                    price: "₹550",
-                    oldPrice: "₹1,500",
-                    rating: 4.6,
-                  ),
-                  SizedBox(width: 15),
-                  Coursecards(
-                    img: "https://media.istockphoto.com/id/1039281614/photo/young-boy-teaching-to-play-guitar.webp?a=1&b=1&s=612x612&w=0&k=20&c=3cJpKnrQAwRdUBsgiNLpoXUjuLbYyfCutF2Y0JRFpKc=",
-                    lessons: "10 Lessons",
-                    title: "Vocal Training",
-                    instructor: "Emily Blunt",
-                    price: "₹600",
-                    oldPrice: "₹2,000",
-                    rating: 4.8,
-                  ),
-                ],
+            SizedBox(
+              height: 260,
+              child: StreamBuilder<List<Coursesmodel>>(
+                stream: FirestoreService().listofCourses,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No courses available",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  final courses = snapshot.data!;
+                  return ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: courses.length,
+                    itemBuilder: (context, index) {
+                      final course = courses[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 15),
+                        child: Builder(
+                          builder: (context) {
+                            final instructorRef =
+                                _resolveInstructorRef(course);
+                            if (instructorRef == null) {
+                              return GestureDetector(
+                                onTap: () {
+                                  context.pushNamed(
+                                    'coursedetails',
+                                    extra: {
+                                      'coursename': course.coursename,
+                                      'courseId': course.id,
+                                      'courseRef': FirebaseFirestore.instance
+                                          .collection('Courses')
+                                          .doc(course.id),
+                                      'courseprice': course.courseprice,
+                                      'coursedescription':
+                                          course.coursedescription,
+                                      'instructorID': course.instructorID,
+                                      'instructorRef': course.instructorRef,
+                                      'courseimage': course.courseimage,
+                                    },
+                                  );
+                                },
+                                child: Coursecards(
+                                  img: course.courseimage,
+                                  lessons:
+                                      "${course.userssignedup} Lessons",
+                                  title: course.coursename,
+                                  instructor: "Instructor",
+                                  price: "₹${course.courseprice}",
+                                ),
+                              );
+                            }
+
+                            return StreamBuilder<
+                                DocumentSnapshot<Map<String, dynamic>>>(
+                              stream: instructorRef.snapshots(),
+                              builder: (context, snapshot) {
+                                String instructorName = "Instructor";
+                                if (snapshot.hasData &&
+                                    snapshot.data?.data() != null) {
+                                  final instructor = InstructorModel.fromMap(
+                                    snapshot.data!.data()!,
+                                    snapshot.data!.id,
+                                  );
+                                  instructorName = instructor.name.isNotEmpty
+                                      ? instructor.name
+                                      : instructorName;
+                                }
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    context.pushNamed(
+                                      'coursedetails',
+                                      extra: {
+                                        'coursename': course.coursename,
+                                        'courseId': course.id,
+                                        'courseRef': FirebaseFirestore.instance
+                                            .collection('Courses')
+                                            .doc(course.id),
+                                        'courseprice': course.courseprice,
+                                        'coursedescription':
+                                            course.coursedescription,
+                                        'instructorID': course.instructorID,
+                                        'instructorRef': course.instructorRef,
+                                        'courseimage': course.courseimage,
+                                      },
+                                    );
+                                  },
+                                  child: Coursecards(
+                                    img: course.courseimage,
+                                    lessons:
+                                        "${course.userssignedup} Lessons",
+                                    title: course.coursename,
+                                    instructor: instructorName,
+                                    price: "₹${course.courseprice}",
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
             const SizedBox(height: 20),
@@ -222,43 +289,47 @@ class Explore extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: const [
-                  Topinstructor(
-                    img:
-                        "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=60",
-                    name: "Alex Johnson",
-                    subtitle: "GUITAR",
-                    rating: 4.9,
-                  ),
-                  SizedBox(width: 15),
-                  Topinstructor(
-                    img:
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&q=60",
-                    name: "Sarah Lee",
-                    subtitle: "PIANO",
-                    rating: 4.8,
-                  ),
-                  SizedBox(width: 15),
-                  Topinstructor(
-                    img:
-                        "https://images.unsplash.com/photo-1521119989659-a83eee488004?w=500&q=60",
-                    name: "David Chen",
-                    subtitle: "DRUMS",
-                    rating: 4.7,
-                  ),
-                  SizedBox(width: 15),
-                  Topinstructor(
-                    img:
-                        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=500&q=60",
-                    name: "Emily Rose",
-                    subtitle: "VOCALS",
-                    rating: 4.9,
-                  ),
-                ],
+            SizedBox(
+              height: 200,
+              child: StreamBuilder<List<InstructorModel>>(
+                stream: FirestoreService().listOfInstructors,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "No instructors available",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  final instructors = snapshot.data!.take(4).toList();
+
+                  return ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: instructors.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 15),
+                    itemBuilder: (context, index) {
+                      final instructor = instructors[index];
+                      return Topinstructor(
+                        img: instructor.imageUrl,
+                        name: instructor.name,
+                        subtitle: instructor.subtitle,
+                        onTap: () {
+                          context.pushNamed(
+                            'instructordetails',
+                            extra: instructor,
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
               ),
             )
             ],

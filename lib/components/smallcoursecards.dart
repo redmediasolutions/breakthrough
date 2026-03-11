@@ -7,7 +7,7 @@ class SmallCourseCard extends StatelessWidget {
   final String title;
   final String instructor;
   final String price;
-  final String discount;
+  final VoidCallback? onTap;
 
   const SmallCourseCard({
     super.key,
@@ -15,21 +15,23 @@ class SmallCourseCard extends StatelessWidget {
     required this.title,
     required this.instructor,
     required this.price,
-    required this.discount,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.only(bottom: 15),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C2037),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 100,
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 15),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C2037),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
           // IMAGE
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
@@ -63,7 +65,7 @@ class SmallCourseCard extends StatelessWidget {
                 const SizedBox(height: 4),
 
                 Text(
-                  instructor,
+                  "By $instructor",
                   style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 13,
@@ -72,34 +74,13 @@ class SmallCourseCard extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                Row(
-                  children: [
-                    Text(
-                      price,
-                      style: const TextStyle(
-                        color:Color(0xFF1437EF),
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1B403B),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        discount,
-                        style: const TextStyle(
-                          color: Color(0xFF42C675),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                  ],
+                Text(
+                  price,
+                  style: const TextStyle(
+                    color: Color(0xFF1437EF),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 )
               ],
             ),
@@ -119,7 +100,8 @@ class SmallCourseCard extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

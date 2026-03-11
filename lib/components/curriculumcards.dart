@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 class CurriculumList extends StatelessWidget {
   final List<CurriculumItem> lessons;
@@ -20,16 +19,22 @@ class CurriculumList extends StatelessWidget {
 }
 
 class CurriculumItem {
+  final String lessonId;
   final String title;
   final String duration;
   final bool locked;
   final bool freepreview;
+  final bool completed;
+  final VoidCallback? onTap;
 
   CurriculumItem({
+    required this.lessonId,
     required this.title,
     required this.duration,
     required this.locked,
     this.freepreview = false,
+    this.completed = false,
+    this.onTap,
   });
 }
 
@@ -43,9 +48,7 @@ class CurriculumCard extends StatelessWidget {
     final textColor = item.locked ? Colors.white70 : Colors.white;
 
     return GestureDetector(
-      onTap: () {
-        context.pushNamed('lessonplayer');
-      },
+      onTap: item.locked ? null : item.onTap,
       child: Column(
         children: [
           Container(
@@ -70,6 +73,18 @@ class CurriculumCard extends StatelessWidget {
 
   // ICON SECTION
   Widget buildicon() {
+    if (item.completed) {
+      return Container(
+        width: 28,
+        height: 28,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFF1B403B),
+        ),
+        child: const Icon(Icons.check, color: Color(0xFF42C675), size: 18),
+      );
+    }
+
     return item.locked
         ? const Icon(Icons.lock, color: Colors.white38, size: 22)
         : Container(

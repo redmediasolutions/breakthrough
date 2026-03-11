@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Coursesmodel {
 
   // CORE VALUES
+  final String id;
   final String coursename;
   final String coursedescription;
   final String courseimage;
@@ -19,6 +20,7 @@ class Coursesmodel {
   final int userssignedup;
 
   Coursesmodel({
+    required this.id,
     required this.coursename,
     required this.coursedescription,
     required this.courseimage,
@@ -55,6 +57,7 @@ class Coursesmodel {
     }
 
     return Coursesmodel(
+      id: doc.id,
       coursename: data['coursename'] ?? '',
       coursedescription: data['coursedescription'] ?? '',
       courseimage: data['courseimage'] ?? '',

@@ -12,15 +12,20 @@ import 'package:breakthrough/pages/login/login.dart';
 import 'package:breakthrough/pages/home/homelanding.dart';
 import 'package:breakthrough/pages/coursedetails/coursedetails.dart';
 import 'package:breakthrough/pages/lessonplayer/lessonplayer.dart';
+import 'package:breakthrough/pages/instructor/instructordetails.dart';
 import 'package:breakthrough/pages/purchasehistory/purchasehistory.dart';
 import 'package:breakthrough/pages/signup/signup.dart';
 import 'package:breakthrough/pages/explore/explore.dart';
 import 'package:breakthrough/pages/profile/profile.dart';
+import 'package:breakthrough/model/instructormodel.dart';
 
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
+Map<String, dynamic>? _lastCourseData;
 
 GoRouter createRouter(AuthProvider authProvider) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     refreshListenable: authProvider,
     initialLocation: '/login',
 
@@ -36,7 +41,9 @@ GoRouter createRouter(AuthProvider authProvider) {
         return '/login';
       }
 
-      if (loggedIn && loggingIn) {
+      if (loggedIn &&
+          (state.matchedLocation == '/login' ||
+              state.matchedLocation == '/signup')) {
         return '/home';
       }
 
@@ -71,17 +78,27 @@ GoRouter createRouter(AuthProvider authProvider) {
 GoRoute(
   path: '/coursedetails',
   name: 'coursedetails',
+  redirect: (context, state) {
+    final extra = state.extra;
+    if (extra is Map) {
+      _lastCourseData = Map<String, dynamic>.from(extra);
+      return null;
+    }
+    if (_lastCourseData != null) {
+      return null;
+    }
+    return '/home';
+  },
   builder: (context, state) {
     final extra = state.extra;
-
-    if (extra == null || extra is! Map) {
-      // If data is missing, we check if we can fallback to a previous state
-      return const Scaffold(
-        body: Center(child: Text("Course data missing")),
-      );
+    if (extra is Map) {
+      _lastCourseData = Map<String, dynamic>.from(extra);
     }
-
-    return Coursedetails(courseData: Map<String, dynamic>.from(extra));
+    final data = _lastCourseData;
+    if (data == null) {
+      return const SizedBox.shrink();
+    }
+    return Coursedetails(courseData: data);
   },
 ),
 
@@ -89,7 +106,36 @@ GoRoute(
       GoRoute(
         path: '/lesson',
         name: 'lessonplayer',
-        builder: (context, state) => const Lessonplayer(),
+        builder: (context, state) =>
+            Lessonplayer(lessonData: state.extra as Map<String, dynamic>?),
+      ),
+
+      /// INSTRUCTOR DETAILS
+      GoRoute(
+        path: '/instructor',
+        name: 'instructordetails',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is InstructorModel) {
+            return Instructordetails(instructor: extra);
+          }
+          if (extra is Map) {
+            final data = Map<String, dynamic>.from(extra);
+            final instructor = InstructorModel.fromMap(
+              data,
+              (data['id'] ?? '').toString(),
+            );
+            return Instructordetails(instructor: instructor);
+          }
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                "Instructor data missing",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        },
       ),
 
       /// BUY NOW

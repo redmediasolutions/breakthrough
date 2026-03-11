@@ -4,14 +4,74 @@ import 'package:breakthrough/components/next_lesson.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breakthrough/components/aboutinstructor.dart';
-//import 'package:musiclearner/components/custombottomlesson.dart';
 import 'package:breakthrough/components/videoplayer.dart';
+import 'package:breakthrough/services/auth_provider.dart';
+import 'package:breakthrough/services/firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
-class Lessonplayer extends StatelessWidget {
-  const Lessonplayer({super.key});
+class Lessonplayer extends StatefulWidget {
+  final Map<String, dynamic>? lessonData;
+
+  const Lessonplayer({super.key, this.lessonData});
+
+  @override
+  State<Lessonplayer> createState() => _LessonplayerState();
+}
+
+class _LessonplayerState extends State<Lessonplayer> {
+  bool _isSaving = false;
+
+  Future<void> _markCompleted() async {
+    final auth = context.read<AuthProvider>();
+    final user = auth.user;
+    if (user == null) {
+      _showSnack("Please login to update progress.");
+      return;
+    }
+
+    final lessonId = widget.lessonData?['lessonId']?.toString();
+    final courseRef =
+        widget.lessonData?['courseRef'] as DocumentReference<Map<String, dynamic>>?;
+
+    if (lessonId == null || lessonId.isEmpty || courseRef == null) {
+      _showSnack("Lesson info missing.");
+      return;
+    }
+
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
+
+    setState(() => _isSaving = true);
+    try {
+      await FirestoreService().markLessonCompleted(
+        userRef: userRef,
+        courseRef: courseRef,
+        lessonId: lessonId,
+      );
+      if (!mounted) return;
+      _showSnack("Marked as completed.");
+    } catch (e) {
+      if (!mounted) return;
+      _showSnack("Failed to update progress.");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  void _showSnack(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final lessonName =
+        widget.lessonData?['lessonName']?.toString() ?? "Lesson Player";
+    final videoUrl = widget.lessonData?['videoUrl']?.toString();
+    final thumbnail = widget.lessonData?['thumbnail']?.toString();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
 
@@ -30,7 +90,7 @@ class Lessonplayer extends StatelessWidget {
         ),
 
         title:Text(
-              "Lesson Player",
+              lessonName,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -56,12 +116,14 @@ class Lessonplayer extends StatelessWidget {
             const SizedBox(height: 20),
 
             // VIDEO PLAYER
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Videoplayer(
                 videourl:
+                    videoUrl ??
                     "https://www.mediafire.com/file/u707a7mmrhl6gzu/Export+Test.mov/file",
                 thumbnailurl:
+                    thumbnail ??
                     "https://plus.unsplash.com/premium_photo-1673804248447-5a405ff3ddbd?w=500",
               ),
             ),
@@ -109,6 +171,40 @@ class Lessonplayer extends StatelessWidget {
               
             ),
             const SizedBox(height: 20),
+
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: _isSaving ? null : _markCompleted,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1437EF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isSaving
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          "Mark Completed",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ),
 
             // INSTRUCTOR SECTION
             const Padding(
