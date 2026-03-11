@@ -10,6 +10,7 @@ class NextLessonCard extends StatelessWidget {
   final String thumbnail;
   final bool islocked;
   final bool showDurationBadge;
+  final VoidCallback? onTap;
  
 
   const NextLessonCard({
@@ -21,29 +22,32 @@ class NextLessonCard extends StatelessWidget {
     required this.thumbnail,
     this.islocked = false,
     this.showDurationBadge = true,
+    this.onTap,
 
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: Stack(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Thumbnail
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      thumbnail,
-                      width: 95,
-                      height: 95,
-                      fit: BoxFit.cover,
-                    ),
+    return GestureDetector(
+      onTap: islocked ? null : onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 10),
+        child: Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        thumbnail,
+                        width: 95,
+                        height: 95,
+                        fit: BoxFit.cover,
+                      ),
 
                     // Duration
                     if (showDurationBadge)
@@ -85,68 +89,69 @@ class NextLessonCard extends StatelessWidget {
 
               const SizedBox(width: 14),
 
-              // Text
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // LESSON
-                    Text(
-                      lessonnumber.toUpperCase(),
-                      style: const TextStyle(
-                        color: Color(0xFF1437EF),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                // Text
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // LESSON
+                      Text(
+                        lessonnumber.toUpperCase(),
+                        style: const TextStyle(
+                          color: Color(0xFF1437EF),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
 
-                    // TITLE
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
+                      // TITLE
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 4),
+                      const SizedBox(height: 4),
 
-                    // SUBTITLE
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 13,
+                      // SUBTITLE
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
                       ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (islocked)
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF0D0F24).withOpacity(0.75),
+                        const Color(0xFF0D0F24).withOpacity(0.55),
+                        const Color(0xFF0D0F24).withOpacity(0.25),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ],
-          ),
-        if (islocked)
-  Positioned.fill(
-    child: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF0D0F24).withOpacity(0.75),
-            const Color(0xFF0D0F24).withOpacity(0.55),
-            const Color(0xFF0D0F24).withOpacity(0.25),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-    ),
-  ),
 
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 
 class Ordersummary extends StatelessWidget {
   final String courseprice;
-  final String tax;
   final String totalamt;
 
   const Ordersummary({
     super.key,
     required this.courseprice,
-    required this.tax,
     required this.totalamt,
   });
 
@@ -48,30 +46,6 @@ class Ordersummary extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-
-          // TAX
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Tax (GST)",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-              ),
-              Text(
-                tax,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
 
           const Divider(color: Colors.white12, thickness: 1),
 

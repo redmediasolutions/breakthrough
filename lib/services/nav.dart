@@ -24,6 +24,7 @@ final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
 Map<String, dynamic>? _lastCourseData;
 Map<String, dynamic>? _lastLessonsCourseData;
+Map<String, dynamic>? _lastLessonData;
 
 GoRouter createRouter(AuthProvider authProvider) {
   return GoRouter(
@@ -108,8 +109,17 @@ GoRoute(
       GoRoute(
         path: '/lesson',
         name: 'lessonplayer',
-        builder: (context, state) =>
-            Lessonplayer(lessonData: state.extra as Map<String, dynamic>?),
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            _lastLessonData = Map<String, dynamic>.from(extra);
+            return Lessonplayer(lessonData: _lastLessonData);
+          }
+          if (_lastLessonData != null) {
+            return Lessonplayer(lessonData: _lastLessonData);
+          }
+          return const Lessonplayer();
+        },
       ),
 
       /// INSTRUCTOR DETAILS

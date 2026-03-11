@@ -7,6 +7,7 @@ import 'package:breakthrough/components/aboutinstructor.dart';
 import 'package:breakthrough/components/videoplayer.dart';
 import 'package:breakthrough/model/instructormodel.dart';
 import 'package:breakthrough/model/lessonmodel.dart';
+import 'package:breakthrough/model/progressmodel.dart';
 import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/services/firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -23,6 +24,7 @@ class Lessonplayer extends StatefulWidget {
 
 class _LessonplayerState extends State<Lessonplayer> {
   bool _isSaving = false;
+  bool _isCompleted = false;
 
   Future<void> _markCompleted() async {
     final auth = context.read<AuthProvider>();
@@ -46,12 +48,21 @@ class _LessonplayerState extends State<Lessonplayer> {
 
     setState(() => _isSaving = true);
     try {
+      final courseRef =
+          widget.lessonData?['courseRef'] as DocumentReference<Map<String, dynamic>>?;
+      if (courseRef == null) {
+        _showSnack("Lesson course missing.");
+        return;
+      }
+
+      debugPrint("Progress write: userRef=${userRef.path}, courseRef=${courseRef.path}, lessonId=$lessonId");
       await FirestoreService().markLessonCompleted(
         userRef: userRef,
         courseRef: courseRef,
         lessonId: lessonId,
       );
       if (!mounted) return;
+      setState(() => _isCompleted = true);
       _showSnack("Marked as completed.");
     } catch (e) {
       if (!mounted) return;
@@ -78,6 +89,12 @@ class _LessonplayerState extends State<Lessonplayer> {
     final thumbnail = widget.lessonData?['thumbnail']?.toString();
     final courseRef =
         widget.lessonData?['courseRef'] as DocumentReference<Map<String, dynamic>>?;
+    final lessonId = widget.lessonData?['lessonId']?.toString();
+    final auth = context.watch<AuthProvider>();
+    final user = auth.user;
+    final userRef = user == null
+        ? null
+        : FirebaseFirestore.instance.collection('users').doc(user.uid);
     final currentLessonId = widget.lessonData?['lessonId']?.toString();
 
     return Scaffold(
@@ -121,7 +138,7 @@ class _LessonplayerState extends State<Lessonplayer> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             // VIDEO PLAYER
             Padding(
@@ -135,50 +152,38 @@ class _LessonplayerState extends State<Lessonplayer> {
                     "https://plus.unsplash.com/premium_photo-1673804248447-5a405ff3ddbd?w=500",
               ),
             ),
-             const SizedBox(height: 20),
+            const SizedBox(height: 14),
 
             const SizedBox.shrink(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _markCompleted,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1437EF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isSaving
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          "Mark Completed",
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                ),
+              child: _CompletionButton(
+                isSaving: _isSaving,
+                localCompleted: _isCompleted,
+                courseRef: courseRef,
+                lessonId: lessonId,
+                userRef: userRef,
+                onMarkCompleted: _markCompleted,
               ),
             ),
+            const SizedBox(height: 14),
 
             // INSTRUCTOR SECTION
             if (courseRef != null)
               StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                 stream: courseRef.snapshots(),
                 builder: (context, courseSnap) {
+                  if (courseSnap.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Instructor error: ${courseSnap.error}",
+                        style: const TextStyle(color: Colors.white60),
+                      ),
+                    );
+                  }
                   if (courseSnap.connectionState ==
                       ConnectionState.waiting) {
                     return const Padding(
@@ -239,6 +244,15 @@ class _LessonplayerState extends State<Lessonplayer> {
                   return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                     stream: instructorRef.snapshots(),
                     builder: (context, instructorSnap) {
+                      if (instructorSnap.hasError) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            "Instructor error: ${instructorSnap.error}",
+                            style: const TextStyle(color: Colors.white60),
+                          ),
+                        );
+                      }
                       if (instructorSnap.connectionState ==
                           ConnectionState.waiting) {
                         return const Padding(
@@ -284,7 +298,7 @@ class _LessonplayerState extends State<Lessonplayer> {
                   style: TextStyle(color: Colors.white60),
                 ),
               ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
@@ -296,7 +310,7 @@ class _LessonplayerState extends State<Lessonplayer> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Divider(
@@ -304,62 +318,93 @@ class _LessonplayerState extends State<Lessonplayer> {
                 thickness: 1,
               ),
             ),
-            
-            
+            const SizedBox(height: 12),
+
             if (courseRef != null && currentLessonId != null)
               const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 child: Text(
                   "Up Next",
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1,
                   ),
                 ),
               ),
-            if (courseRef != null && currentLessonId != null)
-              StreamBuilder<List<LessonModel>>(
-                stream: FirestoreService().listLessonsForCourse(courseRef),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
+            if (courseRef != null && currentLessonId != null && userRef != null)
+              StreamBuilder<ProgressModel?>(
+                stream: FirestoreService().progressForCourse(
+                  userRef: userRef!,
+                  courseRef: courseRef!,
+                ),
+                builder: (context, progressSnap) {
+                  final completedIds =
+                      progressSnap.data?.completedLessonIds ?? <String>[];
+                  final completedCurrent = completedIds.contains(currentLessonId) ||
+                      _isCompleted;
 
-                  final lessons = snapshot.data!;
-                  final currentIndex = lessons
-                      .indexWhere((lesson) => lesson.id == currentLessonId);
-                  final nextIndex = currentIndex == -1
-                      ? 0
-                      : (currentIndex + 1 < lessons.length
-                          ? currentIndex + 1
-                          : -1);
-                  if (nextIndex == -1) {
-                    return const SizedBox.shrink();
-                  }
+                  return StreamBuilder<List<LessonModel>>(
+                    stream: FirestoreService().listLessonsForCourse(courseRef),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
 
-                  final nextLesson = lessons[nextIndex];
+                      final lessons = snapshot.data!;
+                      final currentIndex = lessons
+                          .indexWhere((lesson) => lesson.id == currentLessonId);
+                      final nextIndex = currentIndex == -1
+                          ? 0
+                          : (currentIndex + 1 < lessons.length
+                              ? currentIndex + 1
+                              : -1);
+                      if (nextIndex == -1) {
+                        return const SizedBox.shrink();
+                      }
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: NextLessonCard(
-                      lessonnumber: "Lesson ${nextIndex + 1}",
-                      title: nextLesson.lessonname,
-                      subtitle: nextLesson.isFreePreview
-                          ? "Free Preview"
-                          : "Locked",
-                      duration: nextLesson.duration,
-                      thumbnail: nextLesson.thumbnail.isNotEmpty
-                          ? nextLesson.thumbnail
-                          : "https://i.imgur.com/BoN9kdC.png",
-                      islocked: !nextLesson.isFreePreview,
-                      showDurationBadge: false,
-                    ),
+                      final nextLesson = lessons[nextIndex];
+                      final canUnlockNext = completedCurrent;
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: NextLessonCard(
+                          lessonnumber: "Lesson ${nextIndex + 1}",
+                          title: nextLesson.lessonname,
+                          subtitle: nextLesson.isFreePreview
+                              ? "Free Preview"
+                              : (canUnlockNext ? "Up Next" : "Locked"),
+                          duration: nextLesson.duration,
+                          thumbnail: nextLesson.thumbnail.isNotEmpty
+                              ? nextLesson.thumbnail
+                              : "https://i.imgur.com/BoN9kdC.png",
+                          islocked: !(nextLesson.isFreePreview || canUnlockNext),
+                          showDurationBadge: false,
+                          onTap: () {
+                            if (!(nextLesson.isFreePreview || canUnlockNext)) {
+                              return;
+                            }
+                            context.pushNamed(
+                              'lessonplayer',
+                              extra: {
+                                'lessonId': nextLesson.id,
+                                'lessonName': nextLesson.lessonname,
+                                'lessonDescription':
+                                    nextLesson.lessondescription,
+                                'videoUrl': nextLesson.videoUrl,
+                                'thumbnail': nextLesson.thumbnail,
+                                'courseRef': courseRef,
+                              },
+                            );
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
 
 
@@ -368,6 +413,76 @@ class _LessonplayerState extends State<Lessonplayer> {
         ),
       ),
      // bottomNavigationBar: const Custombottomlesson(),
+    );
+  }
+}
+
+class _CompletionButton extends StatelessWidget {
+  final bool isSaving;
+  final bool localCompleted;
+  final DocumentReference<Map<String, dynamic>>? courseRef;
+  final String? lessonId;
+  final DocumentReference<Map<String, dynamic>>? userRef;
+  final VoidCallback onMarkCompleted;
+
+  const _CompletionButton({
+    required this.isSaving,
+    required this.localCompleted,
+    required this.courseRef,
+    required this.lessonId,
+    required this.userRef,
+    required this.onMarkCompleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (courseRef == null || lessonId == null || userRef == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<ProgressModel?>(
+      stream: FirestoreService().progressForCourse(
+        userRef: userRef!,
+        courseRef: courseRef!,
+      ),
+      builder: (context, snapshot) {
+        final completedFromDb =
+            snapshot.data?.completedLessonIds.contains(lessonId) ?? false;
+        final isCompleted = localCompleted || completedFromDb;
+
+        return SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: ElevatedButton(
+            onPressed: isSaving || isCompleted ? null : onMarkCompleted,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isCompleted
+                  ? const Color(0xFF1B403B)
+                  : const Color(0xFF1437EF),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: isSaving
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    isCompleted ? "Completed" : "Mark Completed",
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 }

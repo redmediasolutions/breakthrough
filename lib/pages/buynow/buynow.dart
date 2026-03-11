@@ -62,7 +62,6 @@ Buycoursecard(
                   const SizedBox(height: 10),
 Ordersummary(
   courseprice: "₹423",
-  tax: "₹76",
   totalamt: "₹499",
 ),
  const SizedBox(height: 10),
@@ -77,23 +76,7 @@ Ordersummary(
                   ),
                   const SizedBox(height: 10),
                   Column(
-  children: [
-    Paymentmethod(
-      icon: Icons.account_balance_wallet,
-      title: "UPI Payments",
-      subtitle: "Google Pay, PhonePe, Paytm",
-    ),
-    Paymentmethod(
-      icon: Icons.credit_card,
-      title: "Credit / Debit Cards",
-      subtitle: "Visa, Mastercard, RuPay",
-    ),
-    Paymentmethod(
-      icon: Icons.account_balance,
-      title: "Net Banking",
-      subtitle: "All major Indian banks",
-    ),
-  ],
+  children: [],
 ),
 // SECURE PAYMENT + FINAL AMOUNT
 Padding(
@@ -190,3 +173,4 @@ const  SizedBox(height: 30),
     );
   }
 }
+

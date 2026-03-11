@@ -7,6 +7,9 @@ import 'package:breakthrough/components/aboutinstructor.dart';
 import 'package:breakthrough/components/buybottombar.dart';
 import 'package:breakthrough/components/videoplayer.dart';
 import 'package:breakthrough/model/instructormodel.dart';
+import 'package:breakthrough/services/auth_provider.dart';
+import 'package:breakthrough/services/firestore.dart';
+import 'package:provider/provider.dart';
 
 class Coursedetails extends StatelessWidget {
   final Map<String, dynamic> courseData;
@@ -30,6 +33,28 @@ class Coursedetails extends StatelessWidget {
         return FirebaseFirestore.instance.doc(normalized);
       }
       return FirebaseFirestore.instance.collection('instructors').doc(normalized);
+    }
+
+    return null;
+  }
+
+  DocumentReference<Map<String, dynamic>>? _resolveCourseRef() {
+    final dynamic courseRef = courseData['courseRef'];
+    if (courseRef is DocumentReference<Map<String, dynamic>>) {
+      return courseRef;
+    }
+    if (courseRef is DocumentReference) {
+      return FirebaseFirestore.instance.doc(courseRef.path);
+    }
+    if (courseRef is String && courseRef.trim().isNotEmpty) {
+      final raw = courseRef.trim();
+      final normalized = raw.startsWith('/') ? raw.substring(1) : raw;
+      return FirebaseFirestore.instance.doc(normalized);
+    }
+
+    final courseId = courseData['courseId']?.toString();
+    if (courseId != null && courseId.isNotEmpty) {
+      return FirebaseFirestore.instance.collection('Courses').doc(courseId);
     }
 
     return null;
@@ -198,68 +223,102 @@ class Coursedetails extends StatelessWidget {
             const SizedBox(height: 30),
 
             /// LESSONS CTA
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF141831),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF1E2140)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            "LESSONS",
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          SizedBox(height: 6),
-                          Text(
-                            "View all course lessons",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        context.pushNamed(
-                          'lessonslist',
-                          extra: courseData,
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1437EF),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+            Builder(
+              builder: (context) {
+                final courseRef = _resolveCourseRef();
+                final auth = context.watch<AuthProvider>();
+                final user = auth.user;
+                if (courseRef == null || user == null) {
+                  return const SizedBox.shrink();
+                }
+
+                final userRef = FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(user.uid);
+
+                return StreamBuilder<bool>(
+                  stream: FirestoreService().isEnrolled(
+                    userRef: userRef,
+                    courseRef: courseRef,
+                  ),
+                  builder: (context, enrolledSnap) {
+                    final isEnrolled = enrolledSnap.data ?? false;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF141831),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFF1E2140)),
                         ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 10),
-                      ),
-                      child: const Text(
-                        "View Lessons",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: const [
+                                  Text(
+                                    "LESSONS",
+                                    style: TextStyle(
+                                      color: Colors.white54,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1,
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    "View all course lessons",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: isEnrolled
+                                  ? () {
+                                      context.pushNamed(
+                                        'lessonslist',
+                                        extra: courseData,
+                                      );
+                                    }
+                                  : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isEnrolled
+                                    ? const Color(0xFF1437EF)
+                                    : const Color(0xFF1E2140),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+                              ),
+                              icon: Icon(
+                                isEnrolled ? Icons.play_arrow : Icons.lock,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              label: Text(
+                                isEnrolled ? "View Lessons" : "Locked",
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                    );
+                  },
+                );
+              },
             ),
 
             const SizedBox(height: 40),
@@ -275,3 +334,4 @@ class Coursedetails extends StatelessWidget {
     );
   }
 }
+
