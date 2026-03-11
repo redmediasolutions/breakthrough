@@ -6,6 +6,7 @@ class LessonModel {
   final String lessonname;
   final int order;
   final String duration;
+  final String lessondescription;
   final String videoUrl;
   final String thumbnail;
   final bool isFreePreview;
@@ -16,6 +17,7 @@ class LessonModel {
     required this.lessonname,
     required this.order,
     required this.duration,
+    required this.lessondescription,
     required this.videoUrl,
     required this.thumbnail,
     required this.isFreePreview,
@@ -44,6 +46,7 @@ class LessonModel {
       lessonname: data['lessonname'] ?? '',
       order: (data['order'] as num?)?.toInt() ?? 0,
       duration: data['duration']?.toString() ?? '',
+      lessondescription: data['lessondescription']?.toString() ?? '',
       videoUrl: data['videoUrl']?.toString() ?? '',
       thumbnail: data['thumbnail']?.toString() ?? '',
       isFreePreview: data['isFreePreview'] ?? false,

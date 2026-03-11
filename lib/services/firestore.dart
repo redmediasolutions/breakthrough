@@ -103,7 +103,9 @@ class FirestoreService {
     };
 
     if (progressQuery.docs.isEmpty) {
-      await FirebaseFirestore.instance.collection('Progress').add(data);
+      await FirebaseFirestore.instance
+          .collection('Progress')
+          .add(data);
     } else {
       await progressQuery.docs.first.reference.set(
         data,

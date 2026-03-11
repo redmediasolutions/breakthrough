@@ -5,14 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breakthrough/components/aboutinstructor.dart';
 import 'package:breakthrough/components/buybottombar.dart';
-import 'package:breakthrough/components/curriculumcards.dart';
 import 'package:breakthrough/components/videoplayer.dart';
 import 'package:breakthrough/model/instructormodel.dart';
-import 'package:breakthrough/model/lessonmodel.dart';
-import 'package:breakthrough/model/progressmodel.dart';
-import 'package:breakthrough/services/firestore.dart';
-import 'package:breakthrough/services/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class Coursedetails extends StatelessWidget {
   final Map<String, dynamic> courseData;
@@ -36,28 +30,6 @@ class Coursedetails extends StatelessWidget {
         return FirebaseFirestore.instance.doc(normalized);
       }
       return FirebaseFirestore.instance.collection('instructors').doc(normalized);
-    }
-
-    return null;
-  }
-
-  DocumentReference<Map<String, dynamic>>? _resolveCourseRef() {
-    final dynamic courseRef = courseData['courseRef'];
-    if (courseRef is DocumentReference<Map<String, dynamic>>) {
-      return courseRef;
-    }
-    if (courseRef is DocumentReference) {
-      return FirebaseFirestore.instance.doc(courseRef.path);
-    }
-    if (courseRef is String && courseRef.trim().isNotEmpty) {
-      final raw = courseRef.trim();
-      final normalized = raw.startsWith('/') ? raw.substring(1) : raw;
-      return FirebaseFirestore.instance.doc(normalized);
-    }
-
-    final courseId = courseData['courseId']?.toString();
-    if (courseId != null && courseId.isNotEmpty) {
-      return FirebaseFirestore.instance.collection('Courses').doc(courseId);
     }
 
     return null;
@@ -225,126 +197,69 @@ class Coursedetails extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            /// CURRICULUM
-            Builder(
-              builder: (context) {
-                final courseRef = _resolveCourseRef();
-                if (courseRef == null) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      "Lessons unavailable",
-                      style: TextStyle(color: Colors.white60),
-                    ),
-                  );
-                }
-
-                final auth = context.watch<AuthProvider>();
-                final user = auth.user;
-                if (user == null) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      "Login to view lessons",
-                      style: TextStyle(color: Colors.white60),
-                    ),
-                  );
-                }
-
-                final userRef = FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid);
-
-                return StreamBuilder<bool>(
-                  stream: FirestoreService().isEnrolled(
-                    userRef: userRef,
-                    courseRef: courseRef,
-                  ),
-                  builder: (context, enrolledSnap) {
-                    final isEnrolled = enrolledSnap.data ?? false;
-
-                    return StreamBuilder<ProgressModel?>(
-                      stream: FirestoreService().progressForCourse(
-                        userRef: userRef,
-                        courseRef: courseRef,
+            /// LESSONS CTA
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF141831),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF1E2140)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            "LESSONS",
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                          SizedBox(height: 6),
+                          Text(
+                            "View all course lessons",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
-                      builder: (context, progressSnap) {
-                        final progress = progressSnap.data;
-                        final completedIds =
-                            progress?.completedLessonIds ?? <String>[];
-
-                        return StreamBuilder<List<LessonModel>>(
-                          stream: FirestoreService()
-                              .listLessonsForCourse(courseRef),
-                          builder: (context, snapshot) {
-                            if (snapshot.hasError) {
-                              return Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  "Lessons error: ${snapshot.error}",
-                                  style:
-                                      const TextStyle(color: Colors.white60),
-                                ),
-                              );
-                            }
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20),
-                                child: CircularProgressIndicator(),
-                              );
-                            }
-                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  "No lessons available",
-                                  style: TextStyle(color: Colors.white60),
-                                ),
-                              );
-                            }
-
-                            final lessons = snapshot.data!;
-                            return CurriculumList(
-                              lessons: lessons
-                                  .map(
-                                    (lesson) {
-                                      final locked = !lesson.isFreePreview &&
-                                          !isEnrolled;
-                                      final completed =
-                                          completedIds.contains(lesson.id);
-                                      return CurriculumItem(
-                                        lessonId: lesson.id,
-                                        title: lesson.lessonname,
-                                        duration: lesson.duration,
-                                        locked: locked,
-                                        freepreview: lesson.isFreePreview,
-                                        completed: completed,
-                                        onTap: () {
-                                          context.pushNamed(
-                                            'lessonplayer',
-                                            extra: {
-                                              'lessonId': lesson.id,
-                                              'lessonName': lesson.lessonname,
-                                              'videoUrl': lesson.videoUrl,
-                                              'thumbnail': lesson.thumbnail,
-                                              'courseRef': courseRef,
-                                            },
-                                          );
-                                        },
-                                      );
-                                    },
-                                  )
-                                  .toList(),
-                            );
-                          },
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.pushNamed(
+                          'lessonslist',
+                          extra: courseData,
                         );
                       },
-                    );
-                  },
-                );
-              },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1437EF),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 10),
+                      ),
+                      child: const Text(
+                        "View Lessons",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
 
             const SizedBox(height: 40),

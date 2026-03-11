@@ -9,6 +9,7 @@ class NextLessonCard extends StatelessWidget {
   final String duration;
   final String thumbnail;
   final bool islocked;
+  final bool showDurationBadge;
  
 
   const NextLessonCard({
@@ -19,6 +20,7 @@ class NextLessonCard extends StatelessWidget {
     required this.duration,
     required this.thumbnail,
     this.islocked = false,
+    this.showDurationBadge = true,
 
   });
 
@@ -44,26 +46,27 @@ class NextLessonCard extends StatelessWidget {
                     ),
 
                     // Duration
-                    Positioned(
-                      bottom: 2,
-                      left: 50,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          duration,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                    if (showDurationBadge)
+                      Positioned(
+                        bottom: 2,
+                        left: 50,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 1),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            duration,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
-                    ),
 
                     // Play or Lock Icon
                     Positioned(

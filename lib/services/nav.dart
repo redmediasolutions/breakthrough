@@ -17,11 +17,13 @@ import 'package:breakthrough/pages/purchasehistory/purchasehistory.dart';
 import 'package:breakthrough/pages/signup/signup.dart';
 import 'package:breakthrough/pages/explore/explore.dart';
 import 'package:breakthrough/pages/profile/profile.dart';
+import 'package:breakthrough/pages/lessons/lessonslist.dart';
 import 'package:breakthrough/model/instructormodel.dart';
 
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> shellNavigatorKey = GlobalKey<NavigatorState>();
 Map<String, dynamic>? _lastCourseData;
+Map<String, dynamic>? _lastLessonsCourseData;
 
 GoRouter createRouter(AuthProvider authProvider) {
   return GoRouter(
@@ -131,6 +133,30 @@ GoRoute(
             body: Center(
               child: Text(
                 "Instructor data missing",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        },
+      ),
+
+      /// LESSONS LIST
+      GoRoute(
+        path: '/lessons',
+        name: 'lessonslist',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            _lastLessonsCourseData = Map<String, dynamic>.from(extra);
+            return LessonsListPage(courseData: _lastLessonsCourseData!);
+          }
+          if (_lastLessonsCourseData != null) {
+            return LessonsListPage(courseData: _lastLessonsCourseData!);
+          }
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                "Course data missing",
                 style: TextStyle(color: Colors.white),
               ),
             ),

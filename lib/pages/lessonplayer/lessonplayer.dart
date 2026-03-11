@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:breakthrough/components/aboutinstructor.dart';
 import 'package:breakthrough/components/videoplayer.dart';
+import 'package:breakthrough/model/instructormodel.dart';
+import 'package:breakthrough/model/lessonmodel.dart';
 import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/services/firestore.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -53,7 +55,7 @@ class _LessonplayerState extends State<Lessonplayer> {
       _showSnack("Marked as completed.");
     } catch (e) {
       if (!mounted) return;
-      _showSnack("Failed to update progress.");
+      _showSnack("Failed to update progress: $e");
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -69,8 +71,14 @@ class _LessonplayerState extends State<Lessonplayer> {
   Widget build(BuildContext context) {
     final lessonName =
         widget.lessonData?['lessonName']?.toString() ?? "Lesson Player";
+    final lessonDescription =
+        widget.lessonData?['lessonDescription']?.toString() ??
+            "No description available.";
     final videoUrl = widget.lessonData?['videoUrl']?.toString();
     final thumbnail = widget.lessonData?['thumbnail']?.toString();
+    final courseRef =
+        widget.lessonData?['courseRef'] as DocumentReference<Map<String, dynamic>>?;
+    final currentLessonId = widget.lessonData?['lessonId']?.toString();
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
@@ -129,47 +137,7 @@ class _LessonplayerState extends State<Lessonplayer> {
             ),
              const SizedBox(height: 20),
 
-            // TITLE & BESTSELLER
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1437EF).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Padding(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          child: Text(
-                            "MODULE 3",
-                            style: TextStyle(
-                              color: Color(0xFF1437EF),
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        "Lesson 4 of 12",
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              
-            ),
+            const SizedBox.shrink(),
             const SizedBox(height: 20),
 
             Padding(
@@ -207,31 +175,126 @@ class _LessonplayerState extends State<Lessonplayer> {
             ),
 
             // INSTRUCTOR SECTION
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
-              child: Aboutinstructor(
-                name: "Alex Johnson",
-                subtitle: "Expert Blues Guitarist • 12 years exp.",
-                img:
-                    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&q=60",
-                rating: 4.9,
-                students: "12.6K",
+            if (courseRef != null)
+              StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                stream: courseRef.snapshots(),
+                builder: (context, courseSnap) {
+                  if (courseSnap.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (!courseSnap.hasData || courseSnap.data?.data() == null) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Instructor unavailable",
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                    );
+                  }
+
+                  final data = courseSnap.data!.data()!;
+                  DocumentReference<Map<String, dynamic>>? instructorRef;
+                  final dynamic refField = data['instructorRef'];
+                  if (refField is DocumentReference<Map<String, dynamic>>) {
+                    instructorRef = refField;
+                  } else if (refField is DocumentReference) {
+                    instructorRef =
+                        FirebaseFirestore.instance.doc(refField.path);
+                  } else {
+                    final dynamic idField = data['instructorID'];
+                    if (idField is DocumentReference<Map<String, dynamic>>) {
+                      instructorRef = idField;
+                    } else if (idField is DocumentReference) {
+                      instructorRef =
+                          FirebaseFirestore.instance.doc(idField.path);
+                    } else if (idField is String && idField.trim().isNotEmpty) {
+                      final raw = idField.trim();
+                      final normalized =
+                          raw.startsWith('/') ? raw.substring(1) : raw;
+                      if (normalized.contains('/')) {
+                        instructorRef =
+                            FirebaseFirestore.instance.doc(normalized);
+                      } else {
+                        instructorRef = FirebaseFirestore.instance
+                            .collection('instructors')
+                            .doc(normalized);
+                      }
+                    }
+                  }
+
+                  if (instructorRef == null) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(
+                        "Instructor unavailable",
+                        style: TextStyle(color: Colors.white60),
+                      ),
+                    );
+                  }
+
+                  return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                    stream: instructorRef.snapshots(),
+                    builder: (context, instructorSnap) {
+                      if (instructorSnap.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+                      if (!instructorSnap.hasData ||
+                          instructorSnap.data?.data() == null) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            "Instructor unavailable",
+                            style: TextStyle(color: Colors.white60),
+                          ),
+                        );
+                      }
+
+                      final instructor = InstructorModel.fromMap(
+                        instructorSnap.data!.data()!,
+                        instructorSnap.data!.id,
+                      );
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Aboutinstructor(
+                          name: instructor.name,
+                          subtitle: instructor.subtitle,
+                          img: instructor.imageUrl,
+                          rating: instructor.rating,
+                          students: instructor.students,
+                        ),
+                      );
+                    },
+                  );
+                },
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  "Instructor unavailable",
+                  style: TextStyle(color: Colors.white60),
+                ),
               ),
-            ),   
             const SizedBox(height: 10),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                "In this lesson, we cover the fundamentals of the"
-                  "minor pentatonic scale across the first position of"
-                  "the fretboard. We'll focus on finger independence"
-                  "and clarity of notes. ",
-                style: TextStyle(
+                lessonDescription,
+                style: const TextStyle(
                   color: Colors.white60,
                   fontSize: 14,
                   height: 1.4,
                 ),
-                  ),
+              ),
             ),
             const SizedBox(height: 20),
             const Padding(
@@ -243,109 +306,59 @@ class _LessonplayerState extends State<Lessonplayer> {
             ),
             
             
-            Padding(
-             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-         child: Container(
-    height: 45,
-    padding: const EdgeInsets.all(4),
-    decoration: BoxDecoration(
-      color: const Color(0xFF1E2140),
-      borderRadius: BorderRadius.circular(14),
-    ),
-
-
-    child: Row(
-      children: [
-        // Resources
-        Expanded(
-          child: Container(
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-
-            ),
-            child: const Text(
-              "Resources",
-              style: TextStyle(
-                color: Color(0xFF8A93BE),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+            if (courseRef != null && currentLessonId != null)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                child: Text(
+                  "Up Next",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ),
+            if (courseRef != null && currentLessonId != null)
+              StreamBuilder<List<LessonModel>>(
+                stream: FirestoreService().listLessonsForCourse(courseRef),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
 
-        const SizedBox(width: 8),
+                  final lessons = snapshot.data!;
+                  final currentIndex = lessons
+                      .indexWhere((lesson) => lesson.id == currentLessonId);
+                  final nextIndex = currentIndex == -1
+                      ? 0
+                      : (currentIndex + 1 < lessons.length
+                          ? currentIndex + 1
+                          : -1);
+                  if (nextIndex == -1) {
+                    return const SizedBox.shrink();
+                  }
 
-        // Up Next
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF0D0F24),
-              borderRadius: BorderRadius.circular(12),
+                  final nextLesson = lessons[nextIndex];
 
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              "Up Next",
-              style: TextStyle(
-                color: Color(0xFF8A93BE),
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: NextLessonCard(
+                      lessonnumber: "Lesson ${nextIndex + 1}",
+                      title: nextLesson.lessonname,
+                      subtitle: nextLesson.isFreePreview
+                          ? "Free Preview"
+                          : "Locked",
+                      duration: nextLesson.duration,
+                      thumbnail: nextLesson.thumbnail.isNotEmpty
+                          ? nextLesson.thumbnail
+                          : "https://i.imgur.com/BoN9kdC.png",
+                      islocked: !nextLesson.isFreePreview,
+                      showDurationBadge: false,
+                    ),
+                  );
+                },
               ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  ),
-),
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: NextLessonCard(
-    lessonnumber: "Lesson 5",
-    title: "Dynamic Alternate Picking Techniques",
-    subtitle: "Advanced Speed Drills",
-    duration: "08:14",
-    thumbnail: "https://i.imgur.com/BoN9kdC.png",
-    islocked: false,
-  ),
-),
-
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: NextLessonCard(
-    lessonnumber: "Lesson 6",
-    title: "Improvisation & Phrasing",
-    subtitle: "The Art of Storytelling",
-    duration: "15:30",
-    thumbnail: "https://i.imgur.com/BoN9kdC.png",
-    islocked: true,
-  ),
-),
-
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: NextLessonCard(
-    lessonnumber: "Lesson 7",
-    title: "Improvisation & Phrasing",
-    subtitle: "The Art of Storytelling",
-    duration: "15:30",
-    thumbnail: "https://i.imgur.com/BoN9kdC.png",
-    islocked: true,
-  ),
-),
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: NextLessonCard(
-    lessonnumber: "Lesson 7",
-    title: "Improvisation & Phrasing",
-    subtitle: "The Art of Storytelling",
-    duration: "15:30",
-    thumbnail: "https://i.imgur.com/BoN9kdC.png",
-    islocked: true,
-  ),
-),
             const SizedBox(height: 20),
 
 
@@ -358,3 +371,4 @@ Padding(
     );
   }
 }
+
