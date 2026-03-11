@@ -8,7 +8,9 @@ class Coursecards extends StatelessWidget {
   final String title;
   final String instructor;
   final String price;
+  final IconData? icons;
   final VoidCallback? onTap;
+  final VoidCallback? onIconTap;
 
   const Coursecards({
     super.key,
@@ -17,13 +19,16 @@ class Coursecards extends StatelessWidget {
     required this.title,
     required this.instructor,
     required this.price,
+    this.onIconTap,
     this.onTap,
+    this.icons,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         width: 260,
         height: 250,
@@ -35,32 +40,40 @@ class Coursecards extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // IMAGE 
+            // --- IMAGE SECTION ---
             Expanded(
               flex: 3,
               child: Stack(
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(18),
-                        topRight: Radius.circular(18)),
+                      topLeft: Radius.circular(18),
+                      topRight: Radius.circular(18),
+                    ),
                     child: SizedBox(
                       width: double.infinity,
                       child: Image.network(
                         img,
                         height: double.infinity,
                         fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey[800],
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-        
-                  // Lessons Count Tag
                   Positioned(
                     top: 10,
                     right: 10,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(8),
@@ -78,13 +91,15 @@ class Coursecards extends StatelessWidget {
                 ],
               ),
             ),
-      
-            // TEXT DETAILS
+
+            // --- TEXT DETAILS SECTION ---
             Expanded(
               flex: 2,
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,10 +111,9 @@ class Coursecards extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-        
                     Text(
                       "By $instructor",
                       maxLines: 1,
@@ -109,14 +123,53 @@ class Coursecards extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-        
-                    Text(
-                      price,
-                      style: const TextStyle(
-                        color: Color(0xFF1437EF),
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+
+                    // --- PRICE & ACTION ROW ---
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Use Flexible or Expanded to prevent the price from pushing the icon out
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.blueAccent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              price,
+                              maxLines:
+                                  1, // Prevent price from wrapping to a second line
+                              overflow: TextOverflow
+                                  .ellipsis, // Add "..." if price is too long
+                              style: const TextStyle(
+                                color: Color(0xFF4D6FFF),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Fixed width space so price doesn't touch the icon
+                        const SizedBox(width: 8),
+
+                        if (icons != null)
+                          SizedBox(
+                            height: 32,
+                            width: 32,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              iconSize: 24,
+                              onPressed: onIconTap,
+                              icon: Icon(icons, color: Colors.amberAccent),
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
