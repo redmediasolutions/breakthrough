@@ -326,12 +326,41 @@ class Coursedetails extends StatelessWidget {
         ),
       ),
 
-      bottomNavigationBar: Buybottombar(
-        title: "LIFETIME ACCESS",
-        price: "₹${courseData['courseprice']}",
-        buttontext: "Buy Now",
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          final courseRef = _resolveCourseRef();
+          final auth = context.watch<AuthProvider>();
+          final user = auth.user;
+          if (courseRef == null || user == null) {
+            return const SizedBox.shrink();
+          }
+
+          final userRef = FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid);
+
+          return StreamBuilder<bool>(
+            stream: FirestoreService().isEnrolled(
+              userRef: userRef,
+              courseRef: courseRef,
+            ),
+            builder: (context, enrolledSnap) {
+              final isEnrolled = enrolledSnap.data ?? false;
+              if (isEnrolled) {
+                return const SizedBox.shrink();
+              }
+              return Buybottombar(
+                title: "LIFETIME ACCESS",
+                price: "₹${courseData['courseprice']}",
+                buttontext: "Buy Now",
+                onTap: () {
+                  context.pushNamed('buynowpage', extra: courseData);
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
-

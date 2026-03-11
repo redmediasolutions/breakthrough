@@ -5,12 +5,14 @@ class Buybottombar extends StatelessWidget {
   final String title;
   final String price;
   final String buttontext;
+  final VoidCallback? onTap;
 
   const Buybottombar({
     super.key,
     this.title = "LIFETIME ACCESS",
     this.price = "₹499",
     this.buttontext = "Buy Now",
+    this.onTap,
   });
 
   @override
@@ -53,7 +55,7 @@ class Buybottombar extends StatelessWidget {
 
           // RIGHT SIDE BUTTON
           GestureDetector(
-            onTap: () {
+            onTap: onTap ?? () {
               context.pushNamed('buynowpage');
             },
             child: Container(
