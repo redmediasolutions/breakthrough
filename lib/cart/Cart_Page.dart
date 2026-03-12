@@ -113,6 +113,7 @@ class _CartPageState extends State<CartPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
+                      //================= CART ITEMS LIST ===============================//
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -194,7 +195,7 @@ class _CartPageState extends State<CartPage> {
       ],
     );
   }
-
+//================ CART ITEM WIDGET ===============================//
   Widget _buildCartItem({
     required String name,
     required String price,
@@ -287,6 +288,7 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
+//=================INCREMENT/DECREMENT BUTTON WIDGET ===============================//
   Widget _quantityBtn(IconData icon, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
@@ -302,7 +304,7 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  // Helper to update quantity or remove item
+  //================= UPDATE QUANTITY & REMOVE ITEM FUNCTIONS ===============================//
   Future<void> _updateQuantity(
     String docId,
     int newQuantity,
