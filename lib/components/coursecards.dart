@@ -12,6 +12,7 @@ class Coursecards extends StatelessWidget {
   final VoidCallback? onTap;
   final bool showPrice;
   final VoidCallback? onIconTap;
+  final bool isInCart;
 
   const Coursecards({
     super.key,
@@ -24,6 +25,7 @@ class Coursecards extends StatelessWidget {
     this.onTap,
     this.showPrice = true,
     this.icons,
+    this.isInCart = false,
   });
 
   @override
@@ -127,17 +129,7 @@ class Coursecards extends StatelessWidget {
                           ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    SizedBox(height: showPrice ? 2 : 8),
                     Text(
                       "By $instructor",
                       maxLines: 1,
@@ -147,65 +139,71 @@ class Coursecards extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-                    if (showPrice) ...[
-                      const SizedBox(height: 10),
-                      Text(
-                        price,
-                        style: const TextStyle(
-                          color: Color(0xFF1437EF),
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-
-                    // --- PRICE & ACTION ROW ---
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Use Flexible or Expanded to prevent the price from pushing the icon out
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blueAccent.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              price,
-                              maxLines:
-                                  1, // Prevent price from wrapping to a second line
-                              overflow: TextOverflow
-                                  .ellipsis, // Add "..." if price is too long
-                              style: const TextStyle(
-                                color: Color(0xFF4D6FFF),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                    if (showPrice || icons != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (showPrice)
+                            Flexible(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.blueAccent.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  price,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Color(0xFF4D6FFF),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-
-                        // Fixed width space so price doesn't touch the icon
-                        const SizedBox(width: 8),
-
-                        if (icons != null)
-                          SizedBox(
-                            height: 32,
-                            width: 32,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              iconSize: 24,
-                              onPressed: onIconTap,
-                              icon: Icon(icons, color: Colors.amberAccent),
+                          if (showPrice && icons != null)
+                            const SizedBox(width: 8),
+                          if (icons != null)
+                            SizedBox(
+                              height: 32,
+                              child: TextButton(
+                                onPressed: isInCart ? null : onIconTap,
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  backgroundColor:
+                                      (isInCart
+                                              ? const Color(0xFF1E2140)
+                                              : const Color(0xFF1437EF))
+                                          .withOpacity(0.2),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  isInCart ? "ADDED" : "ADD TO CART",
+                                  style: TextStyle(
+                                    color: isInCart
+                                        ? Colors.white54
+                                        : const Color(0xFF7FA0FF),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

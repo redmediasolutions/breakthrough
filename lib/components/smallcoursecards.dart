@@ -8,7 +8,9 @@ class SmallCourseCard extends StatelessWidget {
   final String instructor;
   final String price;
   final VoidCallback? onTap;
+  final VoidCallback? onAddTap;
   final bool showPrice;
+  final bool isInCart;
 
   const SmallCourseCard({
     super.key,
@@ -17,7 +19,9 @@ class SmallCourseCard extends StatelessWidget {
     required this.instructor,
     required this.price,
     this.onTap,
+    this.onAddTap,
     this.showPrice = true,
+    this.isInCart = false,
   });
 
   @override
@@ -89,28 +93,34 @@ class SmallCourseCard extends StatelessWidget {
             ),
           ),
 
-          // ARROW BUTTON 
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: showPrice
-                  ? Colors.black.withOpacity(0.25)
-                  : const Color(0xFF1437EF).withOpacity(0.25),
-              borderRadius: BorderRadius.circular(12),
-              border: showPrice
-                  ? null
-                  : Border.all(
-                      color: const Color(0xFF7FA0FF).withOpacity(0.6),
-                      width: 1,
-                    ),
+          if (showPrice)
+            TextButton(
+              onPressed: isInCart ? null : onAddTap,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                backgroundColor: (isInCart
+                        ? const Color(0xFF1E2140)
+                        : const Color(0xFF1437EF))
+                    .withOpacity(0.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                isInCart ? "ADDED" : "ADD TO CART",
+                style: TextStyle(
+                  color: isInCart
+                      ? Colors.white54
+                      : const Color(0xFF7FA0FF),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                ),
+              ),
             ),
-            child: Icon(
-              showPrice ? Icons.chevron_right : Icons.check,
-              size: 20,
-              color: showPrice ? Colors.white : const Color(0xFF7FA0FF),
-            ),
-          ),
           ],
         ),
       ),

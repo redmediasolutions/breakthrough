@@ -1,4 +1,7 @@
+// ignore_for_file: file_names
+
 import 'package:breakthrough/pages/home/homelanding.dart';
+import 'package:breakthrough/pages/checkout/checkout.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -28,12 +31,6 @@ class _CartPageState extends State<CartPage> {
         ),
       );
     }
-
-    double subtotal = 0;
-    int totalQuantity = 0;
-    double shipping = subtotal >= 500 ? 29.0 : 49.0;
-    double taxRate = (subtotal + shipping) * 0.05;
-   
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
@@ -73,10 +70,11 @@ class _CartPageState extends State<CartPage> {
             );
           }
 
+
           final cartDocs = snapshot.data!.docs;
 
-       
           double subtotal = 0;
+          final checkoutItems = <CheckoutItem>[];
 
           for (var doc in cartDocs) {
             final data = doc.data() as Map<String, dynamic>;
@@ -88,79 +86,98 @@ class _CartPageState extends State<CartPage> {
               price = double.tryParse(data['price']) ?? 0.0;
             }
             subtotal += (price * qty);
-            totalQuantity += qty;
+            
+            checkoutItems.add(
+              CheckoutItem(
+                courseId: data['courseId']?.toString() ?? doc.id,
+                name: data['name']?.toString() ?? "Course",
+                image: data['image']?.toString() ?? "",
+                price: price,
+                quantity: qty,
+              ),
+            );
           }
 
-          double shipping = subtotal >= 500 ? 29.0 : 49.0;
-          double taxRate = (subtotal + shipping) * 0.05;
-          double total = subtotal + shipping + taxRate;
+          double total = subtotal;
 
           return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(25),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF9F9F9),
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+                const Text(
+                  "Your Cart",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      //================= CART ITEMS LIST ===============================//
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: cartDocs.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 15),
-                        itemBuilder: (context, index) {
-                          final doc = cartDocs[index];
-                          final item = doc.data() as Map<String, dynamic>;
-                          final String docId = doc.id;
-                          final int currentQty = item['quantity'] ?? 1;
-
-                          return _buildCartItem(
-                            name: item['name'] ?? "Course",
-                            price: "₹${item['price']}",
-                            imageUrl: item['image'] ?? "",
-                            quantity: currentQty,
-                            onIncrement: () => _updateQuantity(
-                              docId,
-                              currentQty + 1,
-                              user.uid,
-                            ),
-                            onDecrement: () => _updateQuantity(
-                              docId,
-                              currentQty - 1,
-                              user.uid,
-                            ),
-                            onRemove: () => _removeItem(docId, user.uid),
-                          );
-                        },
+                ),
+                const SizedBox(height: 16),
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: cartDocs.length,
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 15),
+                  itemBuilder: (context, index) {
+                    final doc = cartDocs[index];
+                    final item = doc.data() as Map<String, dynamic>;
+                    final String docId = doc.id;
+                    return _buildCartItem(
+                      name: item['name'] ?? "Course",
+                      price: "\u20B9${item['price']}",
+                      imageUrl: item['image'] ?? "",
+                      onRemove: () => _removeItem(docId, user.uid),
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  "Order Summary",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                _buildSummaryRow(
+                  "Total",
+                  "\u20B9${total.toStringAsFixed(2)}",
+                  isTotal: true,
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CheckoutPage(
+                            items: checkoutItems,
+                            fromCart: true,
+                          ),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1437EF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-
-                      const Divider(thickness: 1, height: 40),
-                      _buildSummaryRow("Subtotal","₹${subtotal.toStringAsFixed(2)}",
+                    ),
+                    child: const Text(
+                      "Proceed to Checkout",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
                       ),
-                      const SizedBox(height: 12),
-                      _buildSummaryRow("Tax (5%)","₹${taxRate.toStringAsFixed(2)}",),
-                      const SizedBox(height: 12),
-                      _buildSummaryRow("Shipping","₹${shipping.toStringAsFixed(2)}",),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 20),
-                        child: Divider(thickness: 1),
-                      ),
-                      _buildSummaryRow("Total", "₹${total.toStringAsFixed(2)}", isTotal: true,),
-                      const SizedBox(height: 30),
-                      // Checkout button logic...
-                    ],
+                    ),
                   ),
                 ),
               ],
@@ -181,7 +198,7 @@ class _CartPageState extends State<CartPage> {
           style: TextStyle(
             fontSize: isTotal ? 20 : 16,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w400,
-            color: isTotal ? Colors.black : Colors.black54,
+            color: isTotal ? Colors.white : Colors.white70,
           ),
         ),
         Text(
@@ -189,7 +206,7 @@ class _CartPageState extends State<CartPage> {
           style: TextStyle(
             fontSize: isTotal ? 20 : 16,
             fontWeight: isTotal ? FontWeight.w800 : FontWeight.w600,
-            color: isTotal ? const Color(0xFF1437EF) : Colors.black,
+            color: isTotal ? const Color(0xFF1437EF) : Colors.white,
           ),
         ),
       ],
@@ -200,23 +217,14 @@ class _CartPageState extends State<CartPage> {
     required String name,
     required String price,
     required String imageUrl,
-    required int quantity,
-    required VoidCallback onIncrement,
-    required VoidCallback onDecrement,
     required VoidCallback onRemove,
   }) {
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF141831),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFF1E2140)),
       ),
       child: Row(
         children: [
@@ -243,7 +251,7 @@ class _CartPageState extends State<CartPage> {
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black,
+                          color: Colors.white,
                         ),
                         softWrap: true,
                         maxLines: 2,
@@ -256,7 +264,7 @@ class _CartPageState extends State<CartPage> {
                       child: const Icon(
                         Icons.close,
                         size: 18,
-                        color: Colors.grey,
+                        color: Colors.white38,
                       ),
                     ),
                   ],
@@ -264,22 +272,13 @@ class _CartPageState extends State<CartPage> {
                 const SizedBox(height: 5),
                 Text(
                   price,
-                  style: const TextStyle(fontSize: 16, color: Colors.black),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF4D6FFF),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _quantityBtn(Icons.remove, onDecrement),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 15),
-                      child: Text(
-                        "$quantity",
-                        style: const TextStyle(fontWeight: FontWeight.w600,color: Colors.black),
-                      ),
-                    ),
-                    _quantityBtn(Icons.add, onIncrement),
-                  ],
-                ),
+                const SizedBox(height: 2),
               ],
             ),
           ),
@@ -288,44 +287,7 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-//=================INCREMENT/DECREMENT BUTTON WIDGET ===============================//
-  Widget _quantityBtn(IconData icon, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(50),
-      child: Container(
-        padding: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 16, color: Colors.black),
-      ),
-    );
-  }
-
-  //================= UPDATE QUANTITY & REMOVE ITEM FUNCTIONS ===============================//
-  Future<void> _updateQuantity(
-    String docId,
-    int newQuantity,
-    String userId,
-  ) async {
-    final docRef = FirebaseFirestore.instance
-        .collection('carts')
-        .doc(userId)
-        .collection('items')
-        .doc(docId);
-
-    if (newQuantity <= 0) {
-      await docRef.delete();
-    } else {
-      await docRef.update({
-        'quantity': newQuantity,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }
-  }
-
+  //================= REMOVE ITEM FUNCTION ===============================//
   Future<void> _removeItem(String docId, String userId) async {
     await FirebaseFirestore.instance
         .collection('carts')
@@ -335,3 +297,4 @@ class _CartPageState extends State<CartPage> {
         .delete();
   }
 }
+

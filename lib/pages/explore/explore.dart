@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:breakthrough/components/categorysign.dart';
 import 'package:breakthrough/components/coursecards.dart';
 import 'package:breakthrough/components/topinstructor.dart';
+import 'package:breakthrough/pages/login/login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:breakthrough/model/coursesmodel.dart';
 import 'package:breakthrough/model/instructormodel.dart';
 import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/services/firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
 class Explore extends StatelessWidget {
   const Explore({super.key});
@@ -30,6 +32,73 @@ class Explore extends StatelessWidget {
     }
 
     return FirebaseFirestore.instance.collection('instructors').doc(normalized);
+  }
+
+  Future<void> _handleAddToCart(
+    BuildContext context,
+    Coursesmodel course,
+  ) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null || user.isAnonymous) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          enableDrag: false,
+          builder: (context) {
+            return Padding(
+              padding: MediaQuery.viewInsetsOf(context),
+              child: const Login(),
+            );
+          },
+        );
+        return;
+      }
+
+      final String uid = user.uid;
+      final String courseId = course.id;
+
+      final cartItemRef = FirebaseFirestore.instance
+          .collection('carts')
+          .doc(uid)
+          .collection('items')
+          .doc(courseId);
+
+      final cartSnap = await cartItemRef.get();
+
+      if (cartSnap.exists) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Already in cart')),
+          );
+        }
+        return;
+      }
+
+      await cartItemRef.set({
+        'courseId': course.id,
+        'name': course.coursename,
+        'image': course.courseimage,
+        'price': course.courseprice,
+        'quantity': 1,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to cart')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add to cart: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -219,6 +288,10 @@ class Explore extends StatelessWidget {
                                       title: course.coursename,
                                       instructor: "Instructor",
                                       price: "\u20B9${course.courseprice}",
+                                      icons: Icons.add,
+                                      onIconTap:
+                                          () => _handleAddToCart(context, course),
+                                      isInCart: false,
                                     ),
                                   );
                                 },
@@ -255,21 +328,43 @@ class Explore extends StatelessWidget {
                                               'instructorID': course.instructorID,
                                               'instructorRef': course.instructorRef,
                                               'courseimage': course.courseimage,
-                                            },
+                                          },
+                                        );
+                                      },
+                                      child: StreamBuilder<DocumentSnapshot>(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('carts')
+                                            .doc(user!.uid)
+                                            .collection('items')
+                                            .doc(course.id)
+                                            .snapshots(),
+                                        builder: (context, cartSnap) {
+                                          final isInCart =
+                                              cartSnap.data?.exists ?? false;
+                                          return Coursecards(
+                                            img: course.courseimage,
+                                            lessons: "$lessonCount Lessons",
+                                            title: course.coursename,
+                                            instructor: "Instructor",
+                                            price:
+                                                "\u20B9${course.courseprice}",
+                                            showPrice: !isEnrolled,
+                                            icons:
+                                                !isEnrolled ? Icons.add : null,
+                                            onIconTap: !isEnrolled
+                                                ? () => _handleAddToCart(
+                                                    context,
+                                                    course,
+                                                  )
+                                                : null,
+                                            isInCart: isInCart,
                                           );
                                         },
-                                        child: Coursecards(
-                                          img: course.courseimage,
-                                          lessons: "$lessonCount Lessons",
-                                          title: course.coursename,
-                                          instructor: "Instructor",
-                                          price: "\u20B9${course.courseprice}",
-                                          showPrice: !isEnrolled,
-                                        ),
-                                      );
-                                    },
-                                  );
-                                }
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
 
                                 return StreamBuilder<
                                     DocumentSnapshot<Map<String, dynamic>>>(
@@ -312,10 +407,20 @@ class Explore extends StatelessWidget {
                                                 'instructorRef':
                                                     course.instructorRef,
                                                 'courseimage': course.courseimage,
-                                              },
-                                            );
                                           },
-                                          child: Coursecards(
+                                        );
+                                      },
+                                      child: StreamBuilder<DocumentSnapshot>(
+                                        stream: FirebaseFirestore.instance
+                                            .collection('carts')
+                                            .doc(user!.uid)
+                                            .collection('items')
+                                            .doc(course.id)
+                                            .snapshots(),
+                                        builder: (context, cartSnap) {
+                                          final isInCart =
+                                              cartSnap.data?.exists ?? false;
+                                          return Coursecards(
                                             img: course.courseimage,
                                             lessons: "$lessonCount Lessons",
                                             title: course.coursename,
@@ -323,10 +428,21 @@ class Explore extends StatelessWidget {
                                             price:
                                                 "\u20B9${course.courseprice}",
                                             showPrice: !isEnrolled,
-                                          ),
-                                        );
-                                      },
+                                            icons:
+                                                !isEnrolled ? Icons.add : null,
+                                            onIconTap: !isEnrolled
+                                                ? () => _handleAddToCart(
+                                                    context,
+                                                    course,
+                                                  )
+                                                : null,
+                                            isInCart: isInCart,
+                                          );
+                                        },
+                                      ),
                                     );
+                                  },
+                                );
                                   },
                                 );
                               },

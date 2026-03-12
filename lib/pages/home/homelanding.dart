@@ -2,18 +2,18 @@
 
 import 'package:breakthrough/cart/Cart_Page.dart';
 import 'package:breakthrough/pages/login/login.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:breakthrough/services/auth_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:breakthrough/components/coursecards.dart';
 import 'package:breakthrough/components/learning_prog.dart';
 import 'package:breakthrough/components/smallcoursecards.dart';
 import 'package:breakthrough/model/coursesmodel.dart';
 import 'package:breakthrough/model/instructormodel.dart';
+import 'package:breakthrough/services/auth_provider.dart';
 import 'package:breakthrough/services/firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class Homelanding extends StatelessWidget {
   const Homelanding({super.key});
@@ -36,6 +36,73 @@ class Homelanding extends StatelessWidget {
     }
 
     return FirebaseFirestore.instance.collection('instructors').doc(normalized);
+  }
+
+  Future<void> _handleAddToCart(
+    BuildContext context,
+    Coursesmodel course,
+  ) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null || user.isAnonymous) {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          enableDrag: false,
+          builder: (context) {
+            return Padding(
+              padding: MediaQuery.viewInsetsOf(context),
+              child: const Login(),
+            );
+          },
+        );
+        return;
+      }
+
+      final String uid = user.uid;
+      final String courseId = course.id;
+
+      final cartItemRef = FirebaseFirestore.instance
+          .collection('carts')
+          .doc(uid)
+          .collection('items')
+          .doc(courseId);
+
+      final cartSnap = await cartItemRef.get();
+
+      if (cartSnap.exists) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Already in cart')),
+          );
+        }
+        return;
+      }
+
+      await cartItemRef.set({
+        'courseId': course.id,
+        'name': course.coursename,
+        'image': course.courseimage,
+        'price': course.courseprice,
+        'quantity': 1,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Added to cart')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to add to cart: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -97,10 +164,8 @@ class Homelanding extends StatelessWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(
-              Icons.shopping_cart_checkout,
-              color: Colors.white54,
-            ),
+            icon: const Icon(Icons.shopping_cart_checkout,
+                color: Colors.white54),
             onPressed: () {
               Navigator.push(
                 context,
@@ -110,7 +175,6 @@ class Homelanding extends StatelessWidget {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,10 +199,8 @@ class Homelanding extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 25),
 
-            // HORIZONTAL SCROLL (Learning Progress)
             if (auth.user != null)
               StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
@@ -292,8 +354,8 @@ class Homelanding extends StatelessWidget {
                             height: 230,
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16),
                               itemBuilder: (context, index) {
                                 final item = items[index];
                                 return GestureDetector(
@@ -335,6 +397,7 @@ class Homelanding extends StatelessWidget {
                   );
                 },
               ),
+
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -373,7 +436,6 @@ class Homelanding extends StatelessWidget {
             ),
             const SizedBox(height: 18),
 
-            // Courses List (Dynamic)
             SizedBox(
               height: 260,
               child: StreamBuilder<List<Coursesmodel>>(
@@ -399,140 +461,26 @@ class Homelanding extends StatelessWidget {
                       final course = courses[index];
                       return Padding(
                         padding: const EdgeInsets.only(right: 12),
-                        child: GestureDetector(
-                          onTap: () {
-      
-                            context.pushNamed(
-                              'coursedetails',
-                              extra: {
-                                'coursename': course.coursename,
-                                'courseId': course.id,
-                                'courseRef': FirebaseFirestore.instance
-                                    .collection('Courses')
-                                    .doc(course.id),
-                                'courseprice': course.courseprice,
-                                'coursedescription': course.coursedescription,
-                                'instructorID': course.instructorID,
-                                'instructorRef': course.instructorRef,
-                                'courseimage': course.courseimage,
-                              },
-                            );
-                          },
-                          child: Builder(
-                            builder: (context) {
-                              final instructorRef =
-                                  _resolveInstructorRef(course);
-                              final courseRef = FirebaseFirestore.instance
-                                  .collection('Courses')
-                                  .doc(course.id);
-                              final user = auth.user;
-                              final userRef = user == null
-                                  ? null
-                                  : FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(user.uid);
-
-                              if (userRef == null) {
-                                return StreamBuilder<int>(
-                                  stream: FirestoreService()
-                                      .lessonCountForCourse(courseRef),
-                                  builder: (context, countSnap) {
-                                    final lessonCount =
-                                        countSnap.data ?? 0;
-                                    return Coursecards(
-                                      img: course.courseimage,
-                                      lessons: "$lessonCount Lessons",
-                                      title: course.coursename,
-                                      instructor: "Instructor",
-                                      price: "\u20B9${course.courseprice}",
-                                    );
-                                  },
-                                );
-                              }
-
-                              return StreamBuilder<bool>(
-                                stream: FirestoreService().isEnrolled(
-                                  userRef: userRef,
-                                  courseRef: courseRef,
-                                ),
-                                builder: (context, enrolledSnap) {
-                                  final isEnrolled = enrolledSnap.data ?? false;
-
-                                  if (instructorRef == null) {
-                                    return StreamBuilder<int>(
-                                      stream: FirestoreService()
-                                          .lessonCountForCourse(courseRef),
-                                      builder: (context, countSnap) {
-                                        final lessonCount =
-                                            countSnap.data ?? 0;
-                                        return Coursecards(
-                                          img: course.courseimage,
-                                          lessons: "$lessonCount Lessons",
-                                          title: course.coursename,
-                                          instructor: "Instructor",
-                                          price: "\u20B9${course.courseprice}",
-                                          showPrice: !isEnrolled,
-                                        );
-                                      },
-                                    );
-                                  }
-
-                                  return StreamBuilder<
-                                      DocumentSnapshot<Map<String, dynamic>>>(
-                                    stream: instructorRef.snapshots(),
-                                    builder: (context, snapshot) {
-                                      String instructorName = "Instructor";
-                                      if (snapshot.hasData &&
-                                          snapshot.data?.data() != null) {
-                                        final instructor =
-                                            InstructorModel.fromMap(
-                                          snapshot.data!.data()!,
-                                          snapshot.data!.id,
-                                        );
-                                        instructorName =
-                                            instructor.name.isNotEmpty
-                                                ? instructor.name
-                                                : instructorName;
-                                      }
-
-                                      return StreamBuilder<int>(
-                                        stream: FirestoreService()
-                                            .lessonCountForCourse(courseRef),
-                                        builder: (context, countSnap) {
-                                          final lessonCount =
-                                              countSnap.data ?? 0;
-                                          return Coursecards(
-                                            img: course.courseimage,
-                                            lessons: "$lessonCount Lessons",
-                                            title: course.coursename,
-                                            instructor: instructorName,
-                                            price:
-                                                "\u20B9${course.courseprice}",
-                                            showPrice: !isEnrolled,
-                                          );
-                                        },
-                                      );
-                                    },
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        // 1. Remove the outer GestureDetector. It's cleaner to let the widget handle it.
                         child: Builder(
                           builder: (context) {
                             final instructorRef = _resolveInstructorRef(course);
+                            final courseRef = FirebaseFirestore.instance
+                                .collection('Courses')
+                                .doc(course.id);
+                            final user = auth.user;
+                            final userRef = user == null
+                                ? null
+                                : FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid);
 
-                            // Create a reusable function for navigation to keep code clean
                             void navigateToDetails() {
                               context.pushNamed(
                                 'coursedetails',
                                 extra: {
                                   'coursename': course.coursename,
                                   'courseId': course.id,
-                                  'courseRef': FirebaseFirestore.instance
-                                      .collection('Courses')
-                                      .doc(course.id),
+                                  'courseRef': courseRef,
                                   'courseprice': course.courseprice,
                                   'coursedescription': course.coursedescription,
                                   'instructorID': course.instructorID,
@@ -542,114 +490,114 @@ class Homelanding extends StatelessWidget {
                               );
                             }
 
-                            if (instructorRef == null) {
-                              return Coursecards(
-                                img: course.courseimage,
-                                lessons: "${course.userssignedup} Lessons",
-                                title: course.coursename,
-                                instructor: "Instructor",
-                                price: "₹${course.courseprice}",
-                                icons: Icons.add,
-                                onTap:
-                                    navigateToDetails, // PASS THE FUNCTION HERE
-                                onIconTap: () async{
-                                    try {
-              print('➡️ Add to cart clicked');
+                            Widget buildCard({
+                              required String instructorName,
+                              required int lessonCount,
+                              required bool showPrice,
+                            }) {
+                              if (user == null) {
+                                return Coursecards(
+                                  img: course.courseimage,
+                                  lessons: "$lessonCount Lessons",
+                                  title: course.coursename,
+                                  instructor: instructorName,
+                                  price: "\u20B9${course.courseprice}",
+                                  showPrice: showPrice,
+                                  onTap: navigateToDetails,
+                                  icons: showPrice ? Icons.add : null,
+                                  onIconTap: showPrice
+                                      ? () => _handleAddToCart(context, course)
+                                      : null,
+                                );
+                              }
 
-             
-             
-              final user = FirebaseAuth.instance.currentUser;
+                              final cartItemRef = FirebaseFirestore.instance
+                                  .collection('carts')
+                                  .doc(user!.uid)
+                                  .collection('items')
+                                  .doc(course.id);
 
-              /// 🔐 Guest → show login
-              if (user == null || user.isAnonymous) {
-                await showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  enableDrag: false,
-                  builder: (context) {
-                    return Padding(
-                      padding: MediaQuery.viewInsetsOf(context),
-                      child: Login(),
-                    );
-                  },
-                );
-                return;
-              }
-
-             
-         final String uid = user.uid;
-    final String courseId = course.id; 
-
-              final cartItemRef = FirebaseFirestore.instance
-                  .collection('carts')
-                  .doc(uid)
-                  .collection('items')
-                  .doc(courseId);
-
-              final cartSnap = await cartItemRef.get();
-
-         
-
-              if (cartSnap.exists) {
-                /// ➕ Increment
-                await cartItemRef.update({
-                  'quantity': FieldValue.increment(1),
-                  'updatedAt': FieldValue.serverTimestamp(),
-                });
-              } else {
-                /// 🆕 Create
-                await cartItemRef.set({
-          'courseId': course.id,
-          'image': course.courseimage,
-          'name': course.coursename,
-          'price': course.courseprice,
-          'quantity': 1,
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-              }
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Added to cart')));
-              }
-            } catch (e, stack) {
-              print('❌ Add to cart error: $e');
-              print(stack);
-            }
-                                }
+                              return StreamBuilder<DocumentSnapshot>(
+                                stream: cartItemRef.snapshots(),
+                                builder: (context, cartSnap) {
+                                  final isInCart =
+                                      cartSnap.data?.exists ?? false;
+                                  return Coursecards(
+                                    img: course.courseimage,
+                                    lessons: "$lessonCount Lessons",
+                                    title: course.coursename,
+                                    instructor: instructorName,
+                                    price: "\u20B9${course.courseprice}",
+                                    showPrice: showPrice,
+                                    onTap: navigateToDetails,
+                                    icons: showPrice ? Icons.add : null,
+                                    onIconTap: showPrice
+                                        ? () =>
+                                            _handleAddToCart(context, course)
+                                        : null,
+                                    isInCart: isInCart,
+                                  );
+                                },
                               );
                             }
 
-                            return StreamBuilder<
-                              DocumentSnapshot<Map<String, dynamic>>
-                            >(
-                              stream: instructorRef.snapshots(),
-                              builder: (context, snapshot) {
-                                String instructorName = "Instructor";
-                                if (snapshot.hasData &&
-                                    snapshot.data?.data() != null) {
-                                  final instructor = InstructorModel.fromMap(
-                                    snapshot.data!.data()!,
-                                    snapshot.data!.id,
+                            return StreamBuilder<int>(
+                              stream: FirestoreService()
+                                  .lessonCountForCourse(courseRef),
+                              builder: (context, countSnap) {
+                                final lessonCount = countSnap.data ?? 0;
+
+                                if (userRef == null) {
+                                  return buildCard(
+                                    instructorName: "Instructor",
+                                    lessonCount: lessonCount,
+                                    showPrice: true,
                                   );
-                                  instructorName = instructor.name.isNotEmpty
-                                      ? instructor.name
-                                      : instructorName;
                                 }
 
-                                return Coursecards(
-                                  img: course.courseimage,
-                                  lessons: "${course.userssignedup} Lessons",
-                                  title: course.coursename,
-                                  instructor: instructorName,
-                                  price: "₹${course.courseprice}",
-                                  icons: Icons.add,
-                                  onTap:
-                                      navigateToDetails, // PASS THE FUNCTION HERE
-                                 onIconTap: () => _handleAddToCart(context, course)
+                                return StreamBuilder<bool>(
+                                  stream: FirestoreService().isEnrolled(
+                                    userRef: userRef,
+                                    courseRef: courseRef,
+                                  ),
+                                  builder: (context, enrolledSnap) {
+                                    final isEnrolled =
+                                        enrolledSnap.data ?? false;
+
+                                    if (instructorRef == null) {
+                                      return buildCard(
+                                        instructorName: "Instructor",
+                                        lessonCount: lessonCount,
+                                        showPrice: !isEnrolled,
+                                      );
+                                    }
+
+                                    return StreamBuilder<
+                                        DocumentSnapshot<Map<String, dynamic>>>(
+                                      stream: instructorRef.snapshots(),
+                                      builder: (context, snapshot) {
+                                        String instructorName = "Instructor";
+                                        if (snapshot.hasData &&
+                                            snapshot.data?.data() != null) {
+                                          final instructor =
+                                              InstructorModel.fromMap(
+                                            snapshot.data!.data()!,
+                                            snapshot.data!.id,
+                                          );
+                                          instructorName =
+                                              instructor.name.isNotEmpty
+                                                  ? instructor.name
+                                                  : instructorName;
+                                        }
+
+                                        return buildCard(
+                                          instructorName: instructorName,
+                                          lessonCount: lessonCount,
+                                          showPrice: !isEnrolled,
+                                        );
+                                      },
+                                    );
+                                  },
                                 );
                               },
                             );
@@ -661,7 +609,6 @@ class Homelanding extends StatelessWidget {
                 },
               ),
             ),
-
 
             const SizedBox(height: 30),
             const Padding(
@@ -676,7 +623,6 @@ class Homelanding extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -698,162 +644,141 @@ class Homelanding extends StatelessWidget {
                   final courses = snapshot.data!.take(2).toList();
 
                   return Column(
-                    children: courses
-                        .map(
-                          (course) => Builder(
-                            builder: (context) {
-                              final instructorRef =
-                                  _resolveInstructorRef(course);
-                              final user = auth.user;
-                              final userRef = user == null
-                                  ? null
-                                  : FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(user.uid);
-                              final courseRef = FirebaseFirestore.instance
-                                  .collection('Courses')
-                                  .doc(course.id);
+                    children: courses.map((course) {
+                      final instructorRef = _resolveInstructorRef(course);
+                      final user = auth.user;
+                      final userRef = user == null
+                          ? null
+                          : FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid);
+                      final courseRef = FirebaseFirestore.instance
+                          .collection('Courses')
+                          .doc(course.id);
 
-                              if (userRef == null) {
-                              final instructorRef = _resolveInstructorRef(
-                                course,
+                      if (userRef == null || instructorRef == null) {
+                        if (userRef == null) {
+                          return SmallCourseCard(
+                            img: course.courseimage,
+                            title: course.coursename,
+                            instructor: "Instructor",
+                            price: "\u20B9${course.courseprice}",
+                            onAddTap: () => _handleAddToCart(context, course),
+                            onTap: () {
+                              context.pushNamed(
+                                'coursedetails',
+                                extra: {
+                                  'coursename': course.coursename,
+                                  'courseId': course.id,
+                                  'courseRef': courseRef,
+                                  'courseprice': course.courseprice,
+                                  'coursedescription': course.coursedescription,
+                                  'instructorID': course.instructorID,
+                                  'instructorRef': course.instructorRef,
+                                  'courseimage': course.courseimage,
+                                },
                               );
-                              if (instructorRef == null) {
-                                return SmallCourseCard(
-                                  img: course.courseimage,
-                                  title: course.coursename,
-                                  instructor: "Instructor",
-                                  price: "\u20B9${course.courseprice}",
-                                  onTap: () {
-                                    context.pushNamed(
-                                      'coursedetails',
-                                      extra: {
-                                        'coursename': course.coursename,
-                                        'courseId': course.id,
-                                        'courseRef': courseRef,
-                                        'courseprice': course.courseprice,
-                                        'coursedescription':
-                                            course.coursedescription,
-                                        'instructorID': course.instructorID,
-                                        'instructorRef': course.instructorRef,
-                                        'courseimage': course.courseimage,
-                                      },
-                                    );
+                            },
+                          );
+                        }
+
+                        final cartItemRef = FirebaseFirestore.instance
+                            .collection('carts')
+                            .doc(user!.uid)
+                            .collection('items')
+                            .doc(course.id);
+
+                        return StreamBuilder<DocumentSnapshot>(
+                          stream: cartItemRef.snapshots(),
+                          builder: (context, cartSnap) {
+                            final isInCart = cartSnap.data?.exists ?? false;
+                            return SmallCourseCard(
+                              img: course.courseimage,
+                              title: course.coursename,
+                              instructor: "Instructor",
+                              price: "\u20B9${course.courseprice}",
+                              onAddTap: () => _handleAddToCart(context, course),
+                              isInCart: isInCart,
+                              onTap: () {
+                                context.pushNamed(
+                                  'coursedetails',
+                                  extra: {
+                                    'coursename': course.coursename,
+                                    'courseId': course.id,
+                                    'courseRef': courseRef,
+                                    'courseprice': course.courseprice,
+                                    'coursedescription':
+                                        course.coursedescription,
+                                    'instructorID': course.instructorID,
+                                    'instructorRef': course.instructorRef,
+                                    'courseimage': course.courseimage,
                                   },
                                 );
+                              },
+                            );
+                          },
+                        );
+                      }
+
+                      return StreamBuilder<bool>(
+                        stream: FirestoreService().isEnrolled(
+                          userRef: userRef,
+                          courseRef: courseRef,
+                        ),
+                        builder: (context, enrolledSnap) {
+                          final isEnrolled = enrolledSnap.data ?? false;
+
+                          return StreamBuilder<
+                              DocumentSnapshot<Map<String, dynamic>>>(
+                            stream: instructorRef.snapshots(),
+                            builder: (context, snapshot) {
+                              String instructorName = "Instructor";
+                              if (snapshot.hasData &&
+                                  snapshot.data?.data() != null) {
+                                final instructor = InstructorModel.fromMap(
+                                  snapshot.data!.data()!,
+                                  snapshot.data!.id,
+                                );
+                                instructorName = instructor.name.isNotEmpty
+                                    ? instructor.name
+                                    : instructorName;
                               }
 
-                              return StreamBuilder<bool>(
-                                stream: FirestoreService().isEnrolled(
-                                  userRef: userRef,
-                                  courseRef: courseRef,
-                                ),
-                                builder: (context, enrolledSnap) {
-                                  final isEnrolled =
-                                      enrolledSnap.data ?? false;
+                              final cartItemRef = FirebaseFirestore.instance
+                                  .collection('carts')
+                                  .doc(user!.uid)
+                                  .collection('items')
+                                  .doc(course.id);
 
-                                  if (instructorRef == null) {
-                                    return SmallCourseCard(
-                                      img: course.courseimage,
-                                      title: course.coursename,
-                                      instructor: "Instructor",
-                                      price: "\u20B9${course.courseprice}",
-                                      showPrice: !isEnrolled,
-                                      onTap: () {
-                                        context.pushNamed(
-                                          'coursedetails',
-                                          extra: {
-                                            'coursename': course.coursename,
-                                            'courseId': course.id,
-                                            'courseRef': courseRef,
-                                            'courseprice':
-                                                course.courseprice,
-                                            'coursedescription':
-                                                course.coursedescription,
-                                            'instructorID':
-                                                course.instructorID,
-                                            'instructorRef':
-                                                course.instructorRef,
-                                            'courseimage': course.courseimage,
-                                          },
-                                        );
-                                      },
-                              return StreamBuilder<
-                                DocumentSnapshot<Map<String, dynamic>>
-                              >(
-                                stream: instructorRef.snapshots(),
-                                builder: (context, snapshot) {
-                                  String instructorName = "Instructor";
-                                  if (snapshot.hasData &&
-                                      snapshot.data?.data() != null) {
-                                    final instructor = InstructorModel.fromMap(
-                                      snapshot.data!.data()!,
-                                      snapshot.data!.id,
-                                    );
-                                  }
-
-                                  return StreamBuilder<
-                                      DocumentSnapshot<Map<String, dynamic>>>(
-                                    stream: instructorRef.snapshots(),
-                                    builder: (context, snapshot) {
-                                      String instructorName = "Instructor";
-                                      if (snapshot.hasData &&
-                                          snapshot.data?.data() != null) {
-                                        final instructor =
-                                            InstructorModel.fromMap(
-                                          snapshot.data!.data()!,
-                                          snapshot.data!.id,
-                                        );
-                                        instructorName =
-                                            instructor.name.isNotEmpty
-                                                ? instructor.name
-                                                : instructorName;
-                                      }
-
-                                      return SmallCourseCard(
-                                        img: course.courseimage,
-                                        title: course.coursename,
-                                        instructor: instructorName,
-                                        price: "\u20B9${course.courseprice}",
-                                        showPrice: !isEnrolled,
-                                        onTap: () {
-                                          context.pushNamed(
-                                            'coursedetails',
-                                            extra: {
-                                              'coursename': course.coursename,
-                                              'courseId': course.id,
-                                              'courseRef': courseRef,
-                                              'courseprice':
-                                                  course.courseprice,
-                                              'coursedescription':
-                                                  course.coursedescription,
-                                              'instructorID':
-                                                  course.instructorID,
-                                              'instructorRef':
-                                                  course.instructorRef,
-                                              'courseimage': course.courseimage,
-                                            },
-                                          );
+                              return StreamBuilder<DocumentSnapshot>(
+                                stream: cartItemRef.snapshots(),
+                                builder: (context, cartSnap) {
+                                  final isInCart =
+                                      cartSnap.data?.exists ?? false;
                                   return SmallCourseCard(
                                     img: course.courseimage,
                                     title: course.coursename,
                                     instructor: instructorName,
-                                    price: "₹${course.courseprice}",
+                                    price: "\u20B9${course.courseprice}",
+                                    showPrice: !isEnrolled,
+                                    onAddTap: !isEnrolled
+                                        ? () =>
+                                            _handleAddToCart(context, course)
+                                        : null,
+                                    isInCart: isInCart,
                                     onTap: () {
                                       context.pushNamed(
                                         'coursedetails',
                                         extra: {
                                           'coursename': course.coursename,
                                           'courseId': course.id,
-                                          'courseRef': FirebaseFirestore
-                                              .instance
-                                              .collection('Courses')
-                                              .doc(course.id),
+                                          'courseRef': courseRef,
                                           'courseprice': course.courseprice,
                                           'coursedescription':
                                               course.coursedescription,
                                           'instructorID': course.instructorID,
-                                          'instructorRef': course.instructorRef,
+                                          'instructorRef':
+                                              course.instructorRef,
                                           'courseimage': course.courseimage,
                                         },
                                       );
@@ -862,9 +787,10 @@ class Homelanding extends StatelessWidget {
                                 },
                               );
                             },
-                          ),
-                        )
-                        .toList(),
+                          );
+                        },
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -874,63 +800,6 @@ class Homelanding extends StatelessWidget {
       ),
     );
   }
-  Future<void> _handleAddToCart(BuildContext context, Coursesmodel course) async {
-  try {
-    print('➡️ Add to cart clicked: ${course.coursename}');
-    final user = FirebaseAuth.instance.currentUser;
-
-    // Guest → show login
-    if (user == null || user.isAnonymous) {
-      await showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        enableDrag: false,
-        builder: (context) => Padding(
-          padding: MediaQuery.viewInsetsOf(context),
-          child: const Login(), // Ensure your Login widget is const if possible
-        ),
-      );
-      return;
-    }
-
-    final String uid = user.uid;
-    final String courseId = course.id;
-
-    final cartItemRef = FirebaseFirestore.instance
-        .collection('carts')
-        .doc(uid)
-        .collection('items')
-        .doc(courseId);
-
-    final cartSnap = await cartItemRef.get();
-
-    if (cartSnap.exists) {
-      await cartItemRef.update({
-        'quantity': FieldValue.increment(1),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } else {
-      await cartItemRef.set({
-        'courseId': course.id,
-        'image': course.courseimage,
-        'name': course.coursename,
-        'price': course.courseprice,
-        'quantity': 1,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    }
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${course.coursename} added to cart')),
-      );
-    }
-  } catch (e) {
-    print('❌ Add to cart error: $e');
-  }
-}
 }
 
 class _HomeLearningItem {
@@ -981,10 +850,3 @@ class _HomeLessonBrief {
     );
   }
 }
-
-
-
-
-
-
-
