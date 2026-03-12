@@ -11,6 +11,17 @@ class Profile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    String displayName = "User";
+    if (auth.isLoading) {
+      displayName = "Loading...";
+    } else if (auth.userData != null) {
+      final fullName = auth.userData!['fullName']?.toString().trim() ?? "";
+      if (fullName.isNotEmpty) {
+        displayName = fullName;
+      }
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
 
@@ -70,30 +81,30 @@ class Profile extends StatelessWidget {
           ),
 
           // Verified Badge
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Color(0xFF1437EF),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.verified,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-          ),
+          // Positioned(
+          //   bottom: 4,
+          //   right: 4,
+          //   child: Container(
+          //     padding: const EdgeInsets.all(4),
+          //     decoration: BoxDecoration(
+          //       color: Color(0xFF1437EF),
+          //       shape: BoxShape.circle,
+          //     ),
+          //     child: const Icon(
+          //       Icons.verified,
+          //       color: Colors.white,
+          //       size: 18,
+          //     ),
+          //   ),
+          // ),
         ],
       ),
 
       const SizedBox(height: 14),
 
       // NAME
-      const Text(
-        "Keerthan Rao",
+      Text(
+        displayName,
         style: TextStyle(
           color: Colors.white,
           fontSize: 22,
@@ -104,23 +115,23 @@ class Profile extends StatelessWidget {
       const SizedBox(height: 10),
 
       // MEMBERSHIP TAG
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1437EF).withOpacity(0.15),
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: const Color(0xFF1437EF), width: 1),
-        ),
-        child: const Text(
-          "BREAKTHROUGH PLUS MEMBER",
-          style: TextStyle(
-            color: Color(0xFF3C5BFF),
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
-        ),
-      ),
+      // Container(
+      //   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      //   decoration: BoxDecoration(
+      //     color: const Color(0xFF1437EF).withOpacity(0.15),
+      //     borderRadius: BorderRadius.circular(30),
+      //     border: Border.all(color: const Color(0xFF1437EF), width: 1),
+      //   ),
+      //   child: const Text(
+      //     "BREAKTHROUGH PLUS MEMBER",
+      //     style: TextStyle(
+      //       color: Color(0xFF3C5BFF),
+      //       fontSize: 11,
+      //       fontWeight: FontWeight.bold,
+      //       letterSpacing: 1,
+      //     ),
+      //   ),
+      // ),
     ],
   ),
 ),

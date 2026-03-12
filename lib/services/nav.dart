@@ -10,6 +10,7 @@ import 'package:breakthrough/pages/forgotpassword/forgotpassword.dart';
 import 'package:breakthrough/pages/learning/learning.dart';
 import 'package:breakthrough/pages/login/login.dart';
 import 'package:breakthrough/pages/home/homelanding.dart';
+import 'package:breakthrough/pages/certificate/certificate.dart';
 import 'package:breakthrough/pages/coursedetails/coursedetails.dart';
 import 'package:breakthrough/pages/lessonplayer/lessonplayer.dart';
 import 'package:breakthrough/pages/instructor/instructordetails.dart';
@@ -223,6 +224,26 @@ GoRoute(
         path: '/purchasehistory',
         name: 'purchasehistory',
         builder: (context, state) => const Purchasehistory(),
+      ),
+      
+      /// CERTIFICATE
+      GoRoute(
+        path: '/certificate',
+        name: 'certificate',
+        builder: (context, state) {
+          final extra = state.extra;
+          if (extra is Map) {
+            final data = Map<String, dynamic>.from(extra);
+            return CertificatePage(
+              courseName: data['courseName']?.toString() ?? "Course",
+              courseImage: data['courseImage']?.toString() ?? "",
+            );
+          }
+          return const CertificatePage(
+            courseName: "Course",
+            courseImage: "",
+          );
+        },
       ),
 
       /// SHELL ROUTE

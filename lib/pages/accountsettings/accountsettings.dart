@@ -347,39 +347,6 @@ Padding(
 
         const Divider(color: Colors.white12, height: 1, indent: 16, endIndent: 16),
 
-        // TWO-FACTOR AUTH
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          leading: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Color(0xFF1E293B),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.security, color: Colors.white),
-          ),
-          title: const Text(
-            "Two-Factor Authentication",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text(
-                "On",
-                style: TextStyle(
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              SizedBox(width: 8),
-              Icon(Icons.chevron_right, color: Colors.white30),
-            ],
-          ),
-        ),
       ],
     ),
   ),

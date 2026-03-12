@@ -134,69 +134,203 @@ class Homelanding extends StatelessWidget {
 
             const SizedBox(height: 25),
 
-            // CONTINUE LEARNING HEADER
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
-                    "Continue Learning",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      letterSpacing: 1.3,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    "View All",
-                    style: TextStyle(
-                      color: Color(0xFF1437EF),
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 15),
-
             // HORIZONTAL SCROLL (Learning Progress)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              child: Row(
-                children: const [
-                  SizedBox(width: 20),
-                  LearningProgress(
-                    lessontitle: "Lesson 4: Major Scales",
-                    coursetitle: "Mastering Jazz\nGuitar",
-                    img: "https://i.imgur.com/DvpvklR.png",
-                    progress: 0.75,
-                    buttontext: "Resume",
-                  ),
-                  LearningProgress(
-                    lessontitle: "Lesson 2: Chords",
-                    coursetitle: "Acoustic\nBasics",
-                    img: "https://i.imgur.com/BoN9kdC.png",
-                    progress: 0.40,
-                    buttontext: "Resume",
-                  ),
-                  LearningProgress(
-                    lessontitle: "Lesson 1: Introduction",
-                    coursetitle: "Music Theory\nFundamentals",
-                    img: "https://i.imgur.com/BoN9kdC.png",
-                    progress: 0.90,
-                    buttontext: "Resume",
-                  ),
-                  SizedBox(width: 20),
-                ],
-              ),
-            ),
+            if (auth.user != null)
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseFirestore.instance
+                    .collection('Enrollments')
+                    .where(
+                      'userRef',
+                      isEqualTo: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(auth.user!.uid),
+                    )
+                    .where('status', isEqualTo: 'active')
+                    .snapshots(),
+                builder: (context, enrollSnap) {
+                  if (enrollSnap.connectionState ==
+                      ConnectionState.waiting) {
+                    return const SizedBox.shrink();
+                  }
+                  if (!enrollSnap.hasData || enrollSnap.data!.docs.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
 
-            const SizedBox(height: 30),
+                  final enrollments = enrollSnap.data!.docs;
+
+                  Future<List<_HomeLearningItem>> loadItems() async {
+                    final items = <_HomeLearningItem>[];
+                    final userRef = FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(auth.user!.uid);
+
+                    for (final enrollment in enrollments) {
+                      final data = enrollment.data();
+                      final courseRef = data['courseRef']
+                          as DocumentReference<Map<String, dynamic>>?;
+                      if (courseRef == null) continue;
+
+                      final courseSnap = await courseRef.get();
+                      final courseData = courseSnap.data();
+                      if (courseData == null) continue;
+
+                      final courseName =
+                          courseData['coursename']?.toString() ?? 'Course';
+                      final courseImage =
+                          courseData['courseimage']?.toString() ?? '';
+
+                      final lessonsSnap = await FirebaseFirestore.instance
+                          .collection('Lessons')
+                          .where('courseRef', isEqualTo: courseRef)
+                          .orderBy('order')
+                          .get();
+
+                      final lessons = lessonsSnap.docs
+                          .map((doc) => _HomeLessonBrief.fromDoc(doc))
+                          .toList();
+
+                      if (lessons.isEmpty) continue;
+
+                      final progressSnap = await FirebaseFirestore.instance
+                          .collection('Progress')
+                          .where('userRef', isEqualTo: userRef)
+                          .where('courseRef', isEqualTo: courseRef)
+                          .limit(1)
+                          .get();
+
+                      final progressData = progressSnap.docs.isEmpty
+                          ? null
+                          : progressSnap.docs.first.data();
+                      final completedIds =
+                          (progressData?['completedLessonIds']
+                                      as List<dynamic>? ??
+                                  [])
+                              .map((e) => e.toString())
+                              .toSet();
+
+                      final completedCount = completedIds.length;
+                      final totalLessons = lessons.length;
+                      final progressValue = totalLessons == 0
+                          ? 0.0
+                          : (completedCount / totalLessons)
+                              .clamp(0.0, 1.0);
+                      if (progressValue >= 1.0) continue;
+
+                      final nextLesson = lessons.firstWhere(
+                        (lesson) => !completedIds.contains(lesson.id),
+                        orElse: () => lessons.last,
+                      );
+
+                      items.add(
+                        _HomeLearningItem(
+                          courseRef: courseRef,
+                          courseName: courseName,
+                          courseImage: courseImage,
+                          progressValue: progressValue,
+                          lessonLabel:
+                              "Lesson ${nextLesson.order}: ${nextLesson.name}",
+                          nextLesson: nextLesson,
+                        ),
+                      );
+                    }
+
+                    return items;
+                  }
+
+                  return FutureBuilder<List<_HomeLearningItem>>(
+                    future: loadItems(),
+                    builder: (context, itemsSnap) {
+                      if (itemsSnap.connectionState ==
+                          ConnectionState.waiting) {
+                        return const SizedBox.shrink();
+                      }
+                      final items = itemsSnap.data ?? [];
+                      if (items.isEmpty) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  "Continue Learning",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    letterSpacing: 1.3,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () =>
+                                      context.pushNamed('learningpage'),
+                                  child: const Text(
+                                    "View All",
+                                    style: TextStyle(
+                                      color: Color(0xFF1437EF),
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          SizedBox(
+                            height: 230,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 16),
+                              itemBuilder: (context, index) {
+                                final item = items[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    context.pushNamed(
+                                      'lessonplayer',
+                                      extra: {
+                                        'lessonId': item.nextLesson.id,
+                                        'lessonName': item.nextLesson.name,
+                                        'lessonDescription':
+                                            item.nextLesson.description,
+                                        'videoUrl': item.nextLesson.videoUrl,
+                                        'thumbnail': item.nextLesson.thumbnail,
+                                        'courseRef': item.courseRef,
+                                      },
+                                    );
+                                  },
+                                  child: LearningProgress(
+                                    lessontitle: item.lessonLabel,
+                                    coursetitle: item.courseName,
+                                    img: item.courseImage.isNotEmpty
+                                        ? item.courseImage
+                                        : "https://i.imgur.com/BoN9kdC.png",
+                                    progress: item.progressValue,
+                                    buttontext: "Resume",
+                                    buttonIcon: Icons.play_arrow,
+                                  ),
+                                );
+                              },
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(width: 12),
+                              itemCount: items.length,
+                            ),
+                          ),
+                          const SizedBox(height: 30),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
@@ -284,6 +418,9 @@ class Homelanding extends StatelessWidget {
                             builder: (context) {
                               final instructorRef =
                                   _resolveInstructorRef(course);
+                              final courseRef = FirebaseFirestore.instance
+                                  .collection('Courses')
+                                  .doc(course.id);
                               final user = auth.user;
                               final userRef = user == null
                                   ? null
@@ -292,34 +429,47 @@ class Homelanding extends StatelessWidget {
                                       .doc(user.uid);
 
                               if (userRef == null) {
-                                return Coursecards(
-                                  img: course.courseimage,
-                                  lessons: "${course.userssignedup} Lessons",
-                                  title: course.coursename,
-                                  instructor: "Instructor",
-                                  price: "\u20B9${course.courseprice}",
+                                return StreamBuilder<int>(
+                                  stream: FirestoreService()
+                                      .lessonCountForCourse(courseRef),
+                                  builder: (context, countSnap) {
+                                    final lessonCount =
+                                        countSnap.data ?? 0;
+                                    return Coursecards(
+                                      img: course.courseimage,
+                                      lessons: "$lessonCount Lessons",
+                                      title: course.coursename,
+                                      instructor: "Instructor",
+                                      price: "\u20B9${course.courseprice}",
+                                    );
+                                  },
                                 );
                               }
 
                               return StreamBuilder<bool>(
                                 stream: FirestoreService().isEnrolled(
                                   userRef: userRef,
-                                  courseRef: FirebaseFirestore.instance
-                                      .collection('Courses')
-                                      .doc(course.id),
+                                  courseRef: courseRef,
                                 ),
                                 builder: (context, enrolledSnap) {
                                   final isEnrolled = enrolledSnap.data ?? false;
 
                                   if (instructorRef == null) {
-                                    return Coursecards(
-                                      img: course.courseimage,
-                                      lessons:
-                                          "${course.userssignedup} Lessons",
-                                      title: course.coursename,
-                                      instructor: "Instructor",
-                                      price: "\u20B9${course.courseprice}",
-                                      showPrice: !isEnrolled,
+                                    return StreamBuilder<int>(
+                                      stream: FirestoreService()
+                                          .lessonCountForCourse(courseRef),
+                                      builder: (context, countSnap) {
+                                        final lessonCount =
+                                            countSnap.data ?? 0;
+                                        return Coursecards(
+                                          img: course.courseimage,
+                                          lessons: "$lessonCount Lessons",
+                                          title: course.coursename,
+                                          instructor: "Instructor",
+                                          price: "\u20B9${course.courseprice}",
+                                          showPrice: !isEnrolled,
+                                        );
+                                      },
                                     );
                                   }
 
@@ -341,14 +491,22 @@ class Homelanding extends StatelessWidget {
                                                 : instructorName;
                                       }
 
-                                      return Coursecards(
-                                        img: course.courseimage,
-                                        lessons:
-                                            "${course.userssignedup} Lessons",
-                                        title: course.coursename,
-                                        instructor: instructorName,
-                                        price: "\u20B9${course.courseprice}",
-                                        showPrice: !isEnrolled,
+                                      return StreamBuilder<int>(
+                                        stream: FirestoreService()
+                                            .lessonCountForCourse(courseRef),
+                                        builder: (context, countSnap) {
+                                          final lessonCount =
+                                              countSnap.data ?? 0;
+                                          return Coursecards(
+                                            img: course.courseimage,
+                                            lessons: "$lessonCount Lessons",
+                                            title: course.coursename,
+                                            instructor: instructorName,
+                                            price:
+                                                "\u20B9${course.courseprice}",
+                                            showPrice: !isEnrolled,
+                                          );
+                                        },
                                       );
                                     },
                                   );
@@ -537,6 +695,55 @@ class Homelanding extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _HomeLearningItem {
+  final DocumentReference<Map<String, dynamic>> courseRef;
+  final String courseName;
+  final String courseImage;
+  final double progressValue;
+  final String lessonLabel;
+  final _HomeLessonBrief nextLesson;
+
+  _HomeLearningItem({
+    required this.courseRef,
+    required this.courseName,
+    required this.courseImage,
+    required this.progressValue,
+    required this.lessonLabel,
+    required this.nextLesson,
+  });
+}
+
+class _HomeLessonBrief {
+  final String id;
+  final String name;
+  final int order;
+  final String description;
+  final String videoUrl;
+  final String thumbnail;
+
+  _HomeLessonBrief({
+    required this.id,
+    required this.name,
+    required this.order,
+    required this.description,
+    required this.videoUrl,
+    required this.thumbnail,
+  });
+
+  factory _HomeLessonBrief.fromDoc(
+      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data();
+    return _HomeLessonBrief(
+      id: doc.id,
+      name: data['lessonname']?.toString() ?? 'Lesson',
+      order: int.tryParse(data['order']?.toString() ?? '') ?? 1,
+      description: data['lessondescription']?.toString() ?? '',
+      videoUrl: data['videoUrl']?.toString() ?? '',
+      thumbnail: data['thumbnail']?.toString() ?? '',
     );
   }
 }

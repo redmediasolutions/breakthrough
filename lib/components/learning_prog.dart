@@ -6,6 +6,7 @@ class LearningProgress extends StatelessWidget {
   final String img;
   final double progress;
   final String buttontext;
+  final IconData buttonIcon;
 
   const LearningProgress({
     super.key,
@@ -14,6 +15,7 @@ class LearningProgress extends StatelessWidget {
     required this.img,
     required this.progress,
     required this.buttontext,
+    this.buttonIcon = Icons.play_arrow,
   });
 
   @override
@@ -33,16 +35,17 @@ class LearningProgress extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  lessontitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Colors.white54,
-                    letterSpacing: 1,
+                if (lessontitle.trim().isNotEmpty) ...[
+                  Text(
+                    lessontitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white54,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 6),
+                  const SizedBox(height: 6),
+                ],
 
                 Text(
                   coursetitle,
@@ -91,7 +94,7 @@ class LearningProgress extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.play_arrow, color: Colors.white),
+                      Icon(buttonIcon, color: Colors.white),
                       const SizedBox(width: 5),
                       Text(
                         buttontext,

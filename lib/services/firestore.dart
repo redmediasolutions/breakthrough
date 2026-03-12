@@ -52,6 +52,15 @@ class FirestoreService {
     });
   }
 
+  Stream<int> lessonCountForCourse(
+      DocumentReference<Map<String, dynamic>> courseRef) {
+    return FirebaseFirestore.instance
+        .collection('Lessons')
+        .where('courseRef', isEqualTo: courseRef)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
+  }
+
   Stream<bool> isEnrolled({
     required DocumentReference<Map<String, dynamic>> userRef,
     required DocumentReference<Map<String, dynamic>> courseRef,

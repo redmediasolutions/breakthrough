@@ -191,44 +191,11 @@ class Explore extends StatelessWidget {
                                 .doc(course.id);
 
                             if (userRef == null) {
-                              return GestureDetector(
-                                onTap: () {
-                                  context.pushNamed(
-                                    'coursedetails',
-                                    extra: {
-                                      'coursename': course.coursename,
-                                      'courseId': course.id,
-                                      'courseRef': courseRef,
-                                      'courseprice': course.courseprice,
-                                      'coursedescription':
-                                          course.coursedescription,
-                                      'instructorID': course.instructorID,
-                                      'instructorRef': course.instructorRef,
-                                      'courseimage': course.courseimage,
-                                    },
-                                  );
-                                },
-                                child: Coursecards(
-                                  img: course.courseimage,
-                                  lessons:
-                                      "${course.userssignedup} Lessons",
-                                  title: course.coursename,
-                                  instructor: "Instructor",
-                                  price: "\u20B9${course.courseprice}",
-                                ),
-                              );
-                            }
-
-                            return StreamBuilder<bool>(
-                              stream: FirestoreService().isEnrolled(
-                                userRef: userRef,
-                                courseRef: courseRef,
-                              ),
-                              builder: (context, enrolledSnap) {
-                                final isEnrolled =
-                                    enrolledSnap.data ?? false;
-
-                                if (instructorRef == null) {
+                              return StreamBuilder<int>(
+                                stream: FirestoreService()
+                                    .lessonCountForCourse(courseRef),
+                                builder: (context, countSnap) {
+                                  final lessonCount = countSnap.data ?? 0;
                                   return GestureDetector(
                                     onTap: () {
                                       context.pushNamed(
@@ -248,13 +215,59 @@ class Explore extends StatelessWidget {
                                     },
                                     child: Coursecards(
                                       img: course.courseimage,
-                                      lessons:
-                                          "${course.userssignedup} Lessons",
+                                      lessons: "$lessonCount Lessons",
                                       title: course.coursename,
                                       instructor: "Instructor",
                                       price: "\u20B9${course.courseprice}",
-                                      showPrice: !isEnrolled,
                                     ),
+                                  );
+                                },
+                              );
+                            }
+
+                            return StreamBuilder<bool>(
+                              stream: FirestoreService().isEnrolled(
+                                userRef: userRef,
+                                courseRef: courseRef,
+                              ),
+                              builder: (context, enrolledSnap) {
+                                final isEnrolled =
+                                    enrolledSnap.data ?? false;
+
+                                if (instructorRef == null) {
+                                  return StreamBuilder<int>(
+                                    stream: FirestoreService()
+                                        .lessonCountForCourse(courseRef),
+                                    builder: (context, countSnap) {
+                                      final lessonCount =
+                                          countSnap.data ?? 0;
+                                      return GestureDetector(
+                                        onTap: () {
+                                          context.pushNamed(
+                                            'coursedetails',
+                                            extra: {
+                                              'coursename': course.coursename,
+                                              'courseId': course.id,
+                                              'courseRef': courseRef,
+                                              'courseprice': course.courseprice,
+                                              'coursedescription':
+                                                  course.coursedescription,
+                                              'instructorID': course.instructorID,
+                                              'instructorRef': course.instructorRef,
+                                              'courseimage': course.courseimage,
+                                            },
+                                          );
+                                        },
+                                        child: Coursecards(
+                                          img: course.courseimage,
+                                          lessons: "$lessonCount Lessons",
+                                          title: course.coursename,
+                                          instructor: "Instructor",
+                                          price: "\u20B9${course.courseprice}",
+                                          showPrice: !isEnrolled,
+                                        ),
+                                      );
+                                    },
                                   );
                                 }
 
@@ -276,33 +289,43 @@ class Explore extends StatelessWidget {
                                               : instructorName;
                                     }
 
-                                    return GestureDetector(
-                                      onTap: () {
-                                        context.pushNamed(
-                                          'coursedetails',
-                                          extra: {
-                                            'coursename': course.coursename,
-                                            'courseId': course.id,
-                                            'courseRef': courseRef,
-                                            'courseprice': course.courseprice,
-                                            'coursedescription':
-                                                course.coursedescription,
-                                            'instructorID': course.instructorID,
-                                            'instructorRef':
-                                                course.instructorRef,
-                                            'courseimage': course.courseimage,
+                                    return StreamBuilder<int>(
+                                      stream: FirestoreService()
+                                          .lessonCountForCourse(courseRef),
+                                      builder: (context, countSnap) {
+                                        final lessonCount =
+                                            countSnap.data ?? 0;
+                                        return GestureDetector(
+                                          onTap: () {
+                                            context.pushNamed(
+                                              'coursedetails',
+                                              extra: {
+                                                'coursename': course.coursename,
+                                                'courseId': course.id,
+                                                'courseRef': courseRef,
+                                                'courseprice':
+                                                    course.courseprice,
+                                                'coursedescription':
+                                                    course.coursedescription,
+                                                'instructorID':
+                                                    course.instructorID,
+                                                'instructorRef':
+                                                    course.instructorRef,
+                                                'courseimage': course.courseimage,
+                                              },
+                                            );
                                           },
+                                          child: Coursecards(
+                                            img: course.courseimage,
+                                            lessons: "$lessonCount Lessons",
+                                            title: course.coursename,
+                                            instructor: instructorName,
+                                            price:
+                                                "\u20B9${course.courseprice}",
+                                            showPrice: !isEnrolled,
+                                          ),
                                         );
                                       },
-                                      child: Coursecards(
-                                        img: course.courseimage,
-                                        lessons:
-                                            "${course.userssignedup} Lessons",
-                                        title: course.coursename,
-                                        instructor: instructorName,
-                                        price: "\u20B9${course.courseprice}",
-                                        showPrice: !isEnrolled,
-                                      ),
                                     );
                                   },
                                 );

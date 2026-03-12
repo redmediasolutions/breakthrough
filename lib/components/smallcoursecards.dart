@@ -94,13 +94,21 @@ class SmallCourseCard extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.25),
+              color: showPrice
+                  ? Colors.black.withOpacity(0.25)
+                  : const Color(0xFF1437EF).withOpacity(0.25),
               borderRadius: BorderRadius.circular(12),
+              border: showPrice
+                  ? null
+                  : Border.all(
+                      color: const Color(0xFF7FA0FF).withOpacity(0.6),
+                      width: 1,
+                    ),
             ),
-            child: const Icon(
-              Icons.chevron_right,
-              size: 22,
-              color: Colors.white,
+            child: Icon(
+              showPrice ? Icons.chevron_right : Icons.check,
+              size: 20,
+              color: showPrice ? Colors.white : const Color(0xFF7FA0FF),
             ),
           ),
           ],

@@ -88,20 +88,31 @@ class Coursecards extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        if (!showPrice)
+                          const Icon(
+                            Icons.check_circle,
+                            size: 18,
+                            color: Color(0xFF7FA0FF),
+                          ),
+                      ],
                     ),
-        
+                    const SizedBox(height: 6),
                     Text(
                       "By $instructor",
                       maxLines: 1,
@@ -111,8 +122,8 @@ class Coursecards extends StatelessWidget {
                         fontSize: 13,
                       ),
                     ),
-        
-                    if (showPrice)
+                    if (showPrice) ...[
+                      const SizedBox(height: 10),
                       Text(
                         price,
                         style: const TextStyle(
@@ -121,6 +132,7 @@ class Coursecards extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
