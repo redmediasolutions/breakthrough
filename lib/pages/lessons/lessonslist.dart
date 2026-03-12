@@ -331,7 +331,7 @@ class _LessonCard extends StatelessWidget {
                           if (lesson.isFreePreview) ...[
                             const SizedBox(width: 6),
                             const Text(
-                              "• Free Preview",
+                              "ï¿½ Free Preview",
                               style: TextStyle(
                                 color: Colors.white54,
                                 fontSize: 12,
@@ -341,7 +341,7 @@ class _LessonCard extends StatelessWidget {
                           if (completed) ...[
                             const SizedBox(width: 6),
                             const Text(
-                              "• Completed",
+                              "ï¿½ Completed",
                               style: TextStyle(
                                 color: Color(0xFF42C675),
                                 fontSize: 12,
@@ -352,45 +352,6 @@ class _LessonCard extends StatelessWidget {
                         ],
                       );
                     },
-                  ),
-                          style: const TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(
-                        "${lesson.duration} mins",
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (lesson.isFreePreview) ...[
-                        const SizedBox(width: 8),
-                        const Text(
-                          "ï¿½ Free Preview",
-                          style: TextStyle(
-                            color: Colors.white54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                      if (completed) ...[
-                        const SizedBox(width: 8),
-                        const Text(
-                          "ï¿½ Completed",
-                          style: TextStyle(
-                            color: Color(0xFF42C675),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ],
               ),
@@ -440,4 +401,3 @@ class _LessonIcon extends StatelessWidget {
     );
   }
 }
-

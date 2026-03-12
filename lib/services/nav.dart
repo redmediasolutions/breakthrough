@@ -9,7 +9,7 @@ import 'package:breakthrough/pages/buynow/buynow.dart';
 import 'package:breakthrough/pages/forgotpassword/forgotpassword.dart';
 import 'package:breakthrough/pages/learning/learning.dart';
 import 'package:breakthrough/pages/login/login.dart';
-import 'package:breakthrough/pages/lessons/lessonlist.dart';
+import 'package:breakthrough/pages/lessons/lessonslist.dart';
 import 'package:breakthrough/pages/home/homelanding.dart';
 import 'package:breakthrough/pages/certificate/certificate.dart';
 import 'package:breakthrough/pages/coursedetails/coursedetails.dart';

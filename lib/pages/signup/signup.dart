@@ -17,6 +17,8 @@ class _SignupState extends State<Signup> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
@@ -174,17 +176,29 @@ class _SignupState extends State<Signup> {
               ),
               child: TextField(
                 controller: _passwordController,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 15,
                     vertical: 14,
                   ),
                   border: InputBorder.none,
                   hintText: "Min 8 characters",
-                  hintStyle: TextStyle(color: Colors.white38),
-                  suffixIcon: Icon(Icons.remove_red_eye, color: Colors.white38),
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.remove_red_eye,
+                      color: Colors.white38,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -204,17 +218,29 @@ class _SignupState extends State<Signup> {
               ),
               child: TextField(
                 controller: _confirmPasswordController,
-                obscureText: true,
+                obscureText: _obscureConfirmPassword,
                 style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: 15,
                     vertical: 14,
                   ),
                   border: InputBorder.none,
                   hintText: "Repeat your password",
-                  hintStyle: TextStyle(color: Colors.white38),
-                  suffixIcon: Icon(Icons.remove_red_eye, color: Colors.white38),
+                  hintStyle: const TextStyle(color: Colors.white38),
+                  suffixIcon: IconButton(
+                    onPressed: () {
+                      setState(() {
+                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                      });
+                    },
+                    icon: Icon(
+                      _obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.remove_red_eye,
+                      color: Colors.white38,
+                    ),
+                  ),
                 ),
               ),
             ),
