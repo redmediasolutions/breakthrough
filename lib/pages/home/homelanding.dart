@@ -1,5 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:breakthrough/cart/Cart_Page.dart';
+import 'package:breakthrough/pages/login/login.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +19,8 @@ class Homelanding extends StatelessWidget {
   const Homelanding({super.key});
 
   DocumentReference<Map<String, dynamic>>? _resolveInstructorRef(
-      Coursesmodel course) {
+    Coursesmodel course,
+  ) {
     if (course.instructorRef != null) {
       return course.instructorRef;
     }
@@ -47,71 +51,71 @@ class Homelanding extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F24),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TOP SECTION
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 25),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => context.pushNamed('profile'),
-                        child: const CircleAvatar(
-                          radius: 22,
-                          backgroundImage: NetworkImage(
-                            "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop&q=60",
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "WELCOME BACK",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            userName,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              letterSpacing: 1.6,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D0F24),
+        elevation: 0,
+        centerTitle: false,
+        title: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => context.pushNamed('profile'),
+                child: const CircleAvatar(
+                  radius: 22,
+                  backgroundImage: NetworkImage(
+                    "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&auto=format&fit=crop&q=60",
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "WELCOME BACK",
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                      letterSpacing: 1,
                     ),
-                    child: const Icon(
-                      Icons.notifications,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    userName,
+                    style: const TextStyle(
                       color: Colors.white,
-                      size: 22,
+                      fontSize: 16,
+                      letterSpacing: 1.6,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
+            ],
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.shopping_cart_checkout,
+              color: Colors.white54,
             ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              );
+            },
+          ),
+        ],
+      ),
 
-            // SEARCH BAR
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
@@ -348,7 +352,7 @@ class Homelanding extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
-                      vertical: 6,
+                      vertical: 10,
                     ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF1437EF).withOpacity(0.2),
@@ -514,6 +518,142 @@ class Homelanding extends StatelessWidget {
                               );
                             },
                           ),
+                        // 1. Remove the outer GestureDetector. It's cleaner to let the widget handle it.
+                        child: Builder(
+                          builder: (context) {
+                            final instructorRef = _resolveInstructorRef(course);
+
+                            // Create a reusable function for navigation to keep code clean
+                            void navigateToDetails() {
+                              context.pushNamed(
+                                'coursedetails',
+                                extra: {
+                                  'coursename': course.coursename,
+                                  'courseId': course.id,
+                                  'courseRef': FirebaseFirestore.instance
+                                      .collection('Courses')
+                                      .doc(course.id),
+                                  'courseprice': course.courseprice,
+                                  'coursedescription': course.coursedescription,
+                                  'instructorID': course.instructorID,
+                                  'instructorRef': course.instructorRef,
+                                  'courseimage': course.courseimage,
+                                },
+                              );
+                            }
+
+                            if (instructorRef == null) {
+                              return Coursecards(
+                                img: course.courseimage,
+                                lessons: "${course.userssignedup} Lessons",
+                                title: course.coursename,
+                                instructor: "Instructor",
+                                price: "₹${course.courseprice}",
+                                icons: Icons.add,
+                                onTap:
+                                    navigateToDetails, // PASS THE FUNCTION HERE
+                                onIconTap: () async{
+                                    try {
+              print('➡️ Add to cart clicked');
+
+             
+             
+              final user = FirebaseAuth.instance.currentUser;
+
+              /// 🔐 Guest → show login
+              if (user == null || user.isAnonymous) {
+                await showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  enableDrag: false,
+                  builder: (context) {
+                    return Padding(
+                      padding: MediaQuery.viewInsetsOf(context),
+                      child: Login(),
+                    );
+                  },
+                );
+                return;
+              }
+
+             
+         final String uid = user.uid;
+    final String courseId = course.id; 
+
+              final cartItemRef = FirebaseFirestore.instance
+                  .collection('carts')
+                  .doc(uid)
+                  .collection('items')
+                  .doc(courseId);
+
+              final cartSnap = await cartItemRef.get();
+
+         
+
+              if (cartSnap.exists) {
+                /// ➕ Increment
+                await cartItemRef.update({
+                  'quantity': FieldValue.increment(1),
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+              } else {
+                /// 🆕 Create
+                await cartItemRef.set({
+          'courseId': course.id,
+          'image': course.courseimage,
+          'name': course.coursename,
+          'price': course.courseprice,
+          'quantity': 1,
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+              }
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Added to cart')));
+              }
+            } catch (e, stack) {
+              print('❌ Add to cart error: $e');
+              print(stack);
+            }
+                                }
+                              );
+                            }
+
+                            return StreamBuilder<
+                              DocumentSnapshot<Map<String, dynamic>>
+                            >(
+                              stream: instructorRef.snapshots(),
+                              builder: (context, snapshot) {
+                                String instructorName = "Instructor";
+                                if (snapshot.hasData &&
+                                    snapshot.data?.data() != null) {
+                                  final instructor = InstructorModel.fromMap(
+                                    snapshot.data!.data()!,
+                                    snapshot.data!.id,
+                                  );
+                                  instructorName = instructor.name.isNotEmpty
+                                      ? instructor.name
+                                      : instructorName;
+                                }
+
+                                return Coursecards(
+                                  img: course.courseimage,
+                                  lessons: "${course.userssignedup} Lessons",
+                                  title: course.coursename,
+                                  instructor: instructorName,
+                                  price: "₹${course.courseprice}",
+                                  icons: Icons.add,
+                                  onTap:
+                                      navigateToDetails, // PASS THE FUNCTION HERE
+                                 onIconTap: () => _handleAddToCart(context, course)
+                                );
+                              },
+                            );
+                          },
                         ),
                       );
                     },
@@ -521,6 +661,7 @@ class Homelanding extends StatelessWidget {
                 },
               ),
             ),
+
 
             const SizedBox(height: 30),
             const Padding(
@@ -574,6 +715,10 @@ class Homelanding extends StatelessWidget {
                                   .doc(course.id);
 
                               if (userRef == null) {
+                              final instructorRef = _resolveInstructorRef(
+                                course,
+                              );
+                              if (instructorRef == null) {
                                 return SmallCourseCard(
                                   img: course.courseimage,
                                   title: course.coursename,
@@ -633,6 +778,17 @@ class Homelanding extends StatelessWidget {
                                           },
                                         );
                                       },
+                              return StreamBuilder<
+                                DocumentSnapshot<Map<String, dynamic>>
+                              >(
+                                stream: instructorRef.snapshots(),
+                                builder: (context, snapshot) {
+                                  String instructorName = "Instructor";
+                                  if (snapshot.hasData &&
+                                      snapshot.data?.data() != null) {
+                                    final instructor = InstructorModel.fromMap(
+                                      snapshot.data!.data()!,
+                                      snapshot.data!.id,
                                     );
                                   }
 
@@ -678,6 +834,27 @@ class Homelanding extends StatelessWidget {
                                               'courseimage': course.courseimage,
                                             },
                                           );
+                                  return SmallCourseCard(
+                                    img: course.courseimage,
+                                    title: course.coursename,
+                                    instructor: instructorName,
+                                    price: "₹${course.courseprice}",
+                                    onTap: () {
+                                      context.pushNamed(
+                                        'coursedetails',
+                                        extra: {
+                                          'coursename': course.coursename,
+                                          'courseId': course.id,
+                                          'courseRef': FirebaseFirestore
+                                              .instance
+                                              .collection('Courses')
+                                              .doc(course.id),
+                                          'courseprice': course.courseprice,
+                                          'coursedescription':
+                                              course.coursedescription,
+                                          'instructorID': course.instructorID,
+                                          'instructorRef': course.instructorRef,
+                                          'courseimage': course.courseimage,
                                         },
                                       );
                                     },
@@ -697,6 +874,63 @@ class Homelanding extends StatelessWidget {
       ),
     );
   }
+  Future<void> _handleAddToCart(BuildContext context, Coursesmodel course) async {
+  try {
+    print('➡️ Add to cart clicked: ${course.coursename}');
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Guest → show login
+    if (user == null || user.isAnonymous) {
+      await showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        enableDrag: false,
+        builder: (context) => Padding(
+          padding: MediaQuery.viewInsetsOf(context),
+          child: const Login(), // Ensure your Login widget is const if possible
+        ),
+      );
+      return;
+    }
+
+    final String uid = user.uid;
+    final String courseId = course.id;
+
+    final cartItemRef = FirebaseFirestore.instance
+        .collection('carts')
+        .doc(uid)
+        .collection('items')
+        .doc(courseId);
+
+    final cartSnap = await cartItemRef.get();
+
+    if (cartSnap.exists) {
+      await cartItemRef.update({
+        'quantity': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } else {
+      await cartItemRef.set({
+        'courseId': course.id,
+        'image': course.courseimage,
+        'name': course.coursename,
+        'price': course.courseprice,
+        'quantity': 1,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${course.coursename} added to cart')),
+      );
+    }
+  } catch (e) {
+    print('❌ Add to cart error: $e');
+  }
+}
 }
 
 class _HomeLearningItem {
