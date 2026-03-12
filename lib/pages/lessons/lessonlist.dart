@@ -262,6 +262,13 @@ class _LessonCard extends StatelessWidget {
     required this.onTap,
   });
 
+  String _shortDescription(String text, {int maxChars = 45}) {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) return "Lesson overview";
+    if (trimmed.length <= maxChars) return trimmed;
+    return "${trimmed.substring(0, maxChars - 3)}...";
+  }
+
   @override
   Widget build(BuildContext context) {
     final titleColor = locked ? Colors.white60 : Colors.white;
@@ -294,10 +301,69 @@ class _LessonCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
-                  Row(
-                    children: [
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      return Row(
+                        children: [
+                          SizedBox(
+                            width: constraints.maxWidth * 0.58,
+                            child: Text(
+                              _shortDescription(lesson.lessondescription),
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: Text(
+                              "${lesson.duration} mins",
+                              style: const TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          if (lesson.isFreePreview) ...[
+                            const SizedBox(width: 6),
+                            const Text(
+                              "• Free Preview",
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                          if (completed) ...[
+                            const SizedBox(width: 6),
+                            const Text(
+                              "• Completed",
+                              style: TextStyle(
+                                color: Color(0xFF42C675),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      );
+                    },
+                  ),
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
                       Text(
-                        "Video â€¢ ${lesson.duration}",
+                        "${lesson.duration} mins",
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -306,7 +372,7 @@ class _LessonCard extends StatelessWidget {
                       if (lesson.isFreePreview) ...[
                         const SizedBox(width: 8),
                         const Text(
-                          "â€¢ Free Preview",
+                          "ï¿½ Free Preview",
                           style: TextStyle(
                             color: Colors.white54,
                             fontSize: 12,
@@ -316,7 +382,7 @@ class _LessonCard extends StatelessWidget {
                       if (completed) ...[
                         const SizedBox(width: 8),
                         const Text(
-                          "â€¢ Completed",
+                          "ï¿½ Completed",
                           style: TextStyle(
                             color: Color(0xFF42C675),
                             fontSize: 12,
@@ -374,3 +440,4 @@ class _LessonIcon extends StatelessWidget {
     );
   }
 }
+

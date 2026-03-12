@@ -9,6 +9,7 @@ import 'package:breakthrough/pages/buynow/buynow.dart';
 import 'package:breakthrough/pages/forgotpassword/forgotpassword.dart';
 import 'package:breakthrough/pages/learning/learning.dart';
 import 'package:breakthrough/pages/login/login.dart';
+import 'package:breakthrough/pages/lessons/lessonlist.dart';
 import 'package:breakthrough/pages/home/homelanding.dart';
 import 'package:breakthrough/pages/certificate/certificate.dart';
 import 'package:breakthrough/pages/coursedetails/coursedetails.dart';
@@ -18,7 +19,7 @@ import 'package:breakthrough/pages/purchasehistory/purchasehistory.dart';
 import 'package:breakthrough/pages/signup/signup.dart';
 import 'package:breakthrough/pages/explore/explore.dart';
 import 'package:breakthrough/pages/profile/profile.dart';
-import 'package:breakthrough/pages/lessons/lessonslist.dart';
+
 import 'package:breakthrough/pages/purchased/purchased.dart';
 import 'package:breakthrough/model/instructormodel.dart';
 

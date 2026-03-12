@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:breakthrough/services/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
